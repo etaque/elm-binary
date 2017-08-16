@@ -1,3 +1,5 @@
+// TODO: remove debugs console.logs
+
 var _user$project$Native_Bluetooth = (function () {
   var scheduler = _elm_lang$core$Native_Scheduler
 
@@ -82,11 +84,34 @@ var _user$project$Native_Bluetooth = (function () {
     })
   }
 
+  function onCharacteristicValueChanged (onValueChange, characteristicSymbol) {
+    console.log('in onCharacteristicValueChanged')
+    var characteristic = characteristics[characteristicSymbol]
+    return scheduler.nativeBinding(function (callback) {
+      // event handler
+      function handler (event) {
+        // In Chrome 50+, a DataView is returned instead of an ArrayBuffer.
+        var value = event.target.value.buffer ? event.target.value.buffer : event.target.value
+        scheduler.rawSpawn(onValueChange(value))
+      }
+
+      characteristic.addEventListener('characteristicvaluechanged', handler)
+
+      characteristic.startNotifications()
+
+      // Return a function describing how to clean up (this will be called when the Process this is run in is killed).
+      return function () {
+        characteristic.removeEventListener('characteristicvaluechanged', handler)
+      }
+    })
+  }
+
   return {
     requestDevice: requestDevice,
     connect: connect,
     getPrimaryService: F2(getPrimaryService),
     getCharacteristic: F2(getCharacteristic),
-    readValue: readValue
+    readValue: readValue,
+    onCharacteristicValueChanged: F2(onCharacteristicValueChanged)
   }
 })()

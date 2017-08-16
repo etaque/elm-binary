@@ -7,11 +7,12 @@ import Html.Events as HE
 --
 
 import Task
+import Return exposing (Return)
 
 
 --
 
-import BinaryDecoder as BD
+import BinaryDecoder as BD exposing ((|.), (|=))
 import BinaryDecoder.Byte as BDB exposing (ArrayBuffer)
 import Bluetooth
 
@@ -82,16 +83,45 @@ bodySensorLocationDecoder =
 
 
 
+--
+
+
+type alias HeartRate =
+    { heartRate : Int }
+
+
+heartRateDecoder : BDB.Decoder HeartRate
+heartRateDecoder =
+    BD.succeed HeartRate
+        -- The first byte holds some flags
+        |. BDB.uint8
+        |= BDB.uint8
+
+
+
 -- MODEL
 
 
 type alias Model =
-    Result () BodySensorLocation
+    { service : Maybe Bluetooth.Service
+    , heartRateCharacteristic : Maybe Bluetooth.Characteristic
+
+    --
+    , bodySensorLocation : Maybe BodySensorLocation
+    , heartRate : Maybe HeartRate
+    }
 
 
-init : ( Model, Cmd Msg )
+init : Return Msg Model
 init =
-    ( Err (), Cmd.none )
+    { service = Nothing
+    , heartRateCharacteristic = Nothing
+
+    --
+    , bodySensorLocation = Nothing
+    , heartRate = Nothing
+    }
+        |> Return.singleton
 
 
 
@@ -100,30 +130,69 @@ init =
 
 type Msg
     = Connect
+    | GotService (Result () Bluetooth.Service)
+    | GotHeartRateCharacteristic (Result () Bluetooth.Characteristic)
+      --
     | ReadBodySensorLocation (Result () ArrayBuffer)
+      --
+    | GotHeartRate (Result BDB.Error HeartRate)
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> Return Msg Model
 update msg model =
     case msg of
         Connect ->
             model
-                ! [ Bluetooth.requestDevice ()
+                |> Return.singleton
+                |> Return.command
+                    (Bluetooth.requestDevice ()
                         |> Bluetooth.connect
                         |> Task.andThen (Bluetooth.getPrimaryService "heart_rate")
-                        |> Task.andThen (Bluetooth.getCharacteristic "body_sensor_location")
-                        |> Task.andThen (Bluetooth.readValue)
+                        |> Task.attempt GotService
+                    )
+
+        GotService (Ok service) ->
+            { model | service = Just service }
+                |> Return.singleton
+                |> Return.command
+                    (Bluetooth.getCharacteristic "body_sensor_location" service
+                        |> Task.andThen Bluetooth.readValue
                         |> Task.attempt ReadBodySensorLocation
-                  ]
+                    )
+                |> Return.command
+                    (Bluetooth.getCharacteristic "heart_rate_measurement" service
+                        |> Task.attempt GotHeartRateCharacteristic
+                    )
+
+        GotService (Err ()) ->
+            model
+                |> Return.singleton
+
+        GotHeartRateCharacteristic result ->
+            result
+                |> Result.toMaybe
+                |> (\maybeCharacteristic ->
+                        { model | heartRateCharacteristic = maybeCharacteristic }
+                   )
+                |> Return.singleton
 
         ReadBodySensorLocation result ->
-            (result
+            result
                 |> Result.andThen
                     (BDB.decode bodySensorLocationDecoder
                         >> Result.mapError (always ())
                     )
-            )
-                ! []
+                |> Result.toMaybe
+                |> (\sensorLocation -> { model | bodySensorLocation = sensorLocation })
+                |> Return.singleton
+
+        GotHeartRate result ->
+            result
+                |> Result.toMaybe
+                |> (\maybeHR ->
+                        { model | heartRate = maybeHR }
+                   )
+                |> Return.singleton
 
 
 
@@ -132,7 +201,12 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    case model.heartRateCharacteristic of
+        Just characteristic ->
+            Bluetooth.notify characteristic (BDB.decode heartRateDecoder >> GotHeartRate)
+
+        Nothing ->
+            Sub.none
 
 
 
@@ -143,5 +217,6 @@ view : Model -> H.Html Msg
 view model =
     H.div []
         [ model |> toString |> H.text
+        , H.br [] []
         , H.button [ HE.onClick Connect ] [ H.text "Connect" ]
         ]
