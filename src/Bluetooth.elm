@@ -44,7 +44,9 @@ import Process
 
 --
 
-import BinaryDecoder.Byte exposing (ArrayBuffer)
+import Array exposing (Array)
+import Binary exposing (Byte)
+import Binary.LowLevel exposing (ArrayBuffer)
 
 
 --
@@ -140,9 +142,10 @@ getCharacteristic =
 
 {-| Read a value from a characteristic
 -}
-readValue : Characteristic -> Task () ArrayBuffer
+readValue : Characteristic -> Task () (Array Byte)
 readValue =
     Native.Bluetooth.readValue
+        >> Task.map (Binary.LowLevel.fromArrayBuffer)
 
 
 {-| Notify on changes in characteristic value.
@@ -150,7 +153,7 @@ readValue =
 This sets up a listener for the `charastericvaluechanged` event.
 
 -}
-notify : Characteristic -> (ArrayBuffer -> msg) -> Sub msg
+notify : Characteristic -> (Array Byte -> msg) -> Sub msg
 notify characteristic tagger =
     subscription (Notify characteristic tagger)
 
@@ -173,7 +176,7 @@ onCharacteristicValueChanged =
 
 
 type MySub msg
-    = Notify Characteristic (ArrayBuffer -> msg)
+    = Notify Characteristic (Array Byte -> msg)
 
 
 subMap : (a -> b) -> MySub a -> MySub b
@@ -192,7 +195,7 @@ init =
 
 
 type Msg msg
-    = CharacteristicValueChanged (ArrayBuffer -> msg) ArrayBuffer
+    = CharacteristicValueChanged (Array Byte -> msg) ArrayBuffer
 
 
 (&>) t1 t2 =
@@ -229,6 +232,7 @@ onSelfMsg router msg state =
     case msg of
         CharacteristicValueChanged tagger buffer ->
             buffer
+                |> Binary.LowLevel.fromArrayBuffer
                 |> tagger
                 |> Platform.sendToApp router
                 |> Task.andThen (always <| Task.succeed state)

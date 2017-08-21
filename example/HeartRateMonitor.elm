@@ -12,8 +12,9 @@ import Return exposing (Return)
 
 --
 
-import BinaryDecoder as BD exposing ((|.), (|=))
-import BinaryDecoder.Byte as BDB exposing (ArrayBuffer)
+import Array exposing (Array)
+import Binary exposing (Byte)
+import Binary.Decode as BD exposing ((|.), (|=))
 import Bluetooth
 
 
@@ -42,9 +43,9 @@ type BodySensorLocation
     | Unknown
 
 
-bodySensorLocationDecoder : BDB.Decoder BodySensorLocation
+bodySensorLocationDecoder : BD.Decoder BodySensorLocation
 bodySensorLocationDecoder =
-    BDB.uint8
+    BD.int8
         |> BD.andThen
             (\i ->
                 case i of
@@ -90,12 +91,12 @@ type alias HeartRate =
     { heartRate : Int }
 
 
-heartRateDecoder : BDB.Decoder HeartRate
+heartRateDecoder : BD.Decoder HeartRate
 heartRateDecoder =
     BD.succeed HeartRate
         -- The first byte holds some flags
-        |. BDB.uint8
-        |= BDB.uint8
+        |. BD.int8
+        |= BD.int8
 
 
 
@@ -133,9 +134,9 @@ type Msg
     | GotService (Result () Bluetooth.Service)
     | GotHeartRateCharacteristic (Result () Bluetooth.Characteristic)
       --
-    | ReadBodySensorLocation (Result () ArrayBuffer)
+    | ReadBodySensorLocation (Result () (Array Byte))
       --
-    | GotHeartRate (Result BDB.Error HeartRate)
+    | GotHeartRate (Result BD.Error HeartRate)
 
 
 update : Msg -> Model -> Return Msg Model
@@ -179,7 +180,7 @@ update msg model =
         ReadBodySensorLocation result ->
             result
                 |> Result.andThen
-                    (BDB.decode bodySensorLocationDecoder
+                    (BD.decode bodySensorLocationDecoder
                         >> Result.mapError (always ())
                     )
                 |> Result.toMaybe
@@ -203,7 +204,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.heartRateCharacteristic of
         Just characteristic ->
-            Bluetooth.notify characteristic (BDB.decode heartRateDecoder >> GotHeartRate)
+            Bluetooth.notify characteristic (BD.decode heartRateDecoder >> GotHeartRate)
 
         Nothing ->
             Sub.none
