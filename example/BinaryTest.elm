@@ -5,10 +5,8 @@ import Return exposing (Return)
 
 --
 
-import Array
 import Binary
 import Binary.Decode as BD exposing ((|=), (|.))
-import Binary.LowLevel
 
 
 --
@@ -76,15 +74,9 @@ type alias SomeStruct =
 
 view : Model -> H.Html Msg
 view model =
-    Binary.LowLevel.test ()
-        |> Binary.LowLevel.fromArrayBuffer
-        -- |> Array.map
-        --     (\byte ->
-        --         Array.empty
-        --             |> Array.push byte
-        --             |> Binary.LowLevel.toArrayBuffer
-        --             |> Binary.LowLevel.getInt8 0
-        --     )
+    Binary.int8 5
+        |> List.repeat 4
+        |> Binary.concat
         |> BD.decode
             (BD.succeed identity
                 |. BD.int8

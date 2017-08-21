@@ -7,10 +7,8 @@ import Fuzz
 
 --
 
-import Array
-import Binary
+import Binary exposing (ArrayBuffer)
 import Binary.Decode as BD exposing ((|=), (|.))
-import Binary.LowLevel
 
 
 suite : Test
@@ -23,53 +21,39 @@ suite =
 
 encoding : Test
 encoding =
-    describe "Encoding"
-        [ fuzz (Fuzz.intRange 0 50) "zeros returns n sized array" <|
-            \n ->
-                Binary.zeros n
-                    |> Array.length
-                    |> Expect.equal n
-        , fuzz (Fuzz.intRange 0 50) "zeros returns all zeros" <|
-            \n ->
-                Binary.zeros n
-                    |> Array.map
-                        (\byte ->
-                            Array.empty
-                                |> Array.push byte
-                                |> Binary.LowLevel.toArrayBuffer
-                                |> Binary.LowLevel.getInt8 0
-                        )
-                    |> Array.toList
-                    |> List.all
-                        (\maybe ->
-                            case maybe of
-                                Just 0 ->
-                                    True
-
-                                _ ->
-                                    False
-                        )
-                    |> Expect.true "Expected all bytes to be zero"
-        , fuzz (Fuzz.intRange -20 0) "ask for negative amount of zeros and get 0" <|
-            \n ->
-                Binary.zeros n
-                    |> Array.length
-                    |> Expect.equal 0
-
-        -- int8
-        , fuzz (Fuzz.intRange -128 127) "encode a valid int8" <|
-            \n ->
-                Binary.int8 n
-                    |> Binary.LowLevel.toArrayBuffer
-                    |> Binary.LowLevel.getInt8 0
-                    |> Expect.equal (Just n)
-        , test "encoding an out of range int8 causes overflow" <|
-            \_ ->
-                Binary.int8 128
-                    |> Binary.LowLevel.toArrayBuffer
-                    |> Binary.LowLevel.getInt8 0
-                    |> Expect.equal (Just -128)
-        ]
+    let
+        basicTest : String -> Fuzz.Fuzzer a -> (a -> ArrayBuffer) -> BD.Decoder a -> Test
+        basicTest name fuzzer encoder decoder =
+            fuzz fuzzer name <|
+                \a ->
+                    encoder a
+                        |> List.repeat 3
+                        |> Binary.concat
+                        |> BD.decode (BD.many decoder)
+                        |> Expect.equal (Ok (a |> List.repeat 3))
+    in
+        describe "basic types"
+            [ fuzz (Fuzz.intRange 0 50) "zeros" <|
+                \n ->
+                    Binary.zeros n
+                        |> BD.decode (BD.many BD.int8)
+                        |> Expect.equal (Ok (List.repeat n 0))
+            , basicTest "int8-" (Fuzz.intRange -128 127) Binary.int8 BD.int8
+            , test "int8 overflow" <|
+                \_ ->
+                    Binary.int8 128
+                        |> BD.decode BD.int8
+                        |> Expect.equal (Ok -128)
+            , basicTest "uint8" (Fuzz.intRange 0 255) Binary.uint8 BD.uint8
+            , basicTest "int16" (Fuzz.intRange -32768 32767) Binary.int16 BD.int16
+            , basicTest "int16LE" (Fuzz.intRange -32768 32767) Binary.int16LE BD.int16LE
+            , basicTest "uint16" (Fuzz.intRange 0 65535) Binary.uint16 BD.uint16
+            , basicTest "uint16LE" (Fuzz.intRange 0 65535) Binary.uint16LE BD.uint16LE
+            , basicTest "int32" (Fuzz.intRange -32768 32767) Binary.int32 BD.int32
+            , basicTest "int32LE" (Fuzz.intRange -32768 32767) Binary.int32LE BD.int32LE
+            , basicTest "uint32" (Fuzz.intRange 0 65535) Binary.uint32 BD.uint32
+            , basicTest "uint32LE" (Fuzz.intRange 0 65535) Binary.uint32LE BD.uint32LE
+            ]
 
 
 decoder : Test
@@ -77,32 +61,32 @@ decoder =
     describe "Decode"
         [ test "succeed" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode (BD.succeed 0)
                     |> Expect.equal (Ok 0)
         , test "fail" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode (BD.fail "Just like that.")
                     |> Expect.err
         , test "andThen" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode (BD.succeed 0 |> BD.andThen (\a -> BD.succeed (a + 1)))
                     |> Expect.equal (Ok 1)
         , test "map" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode (BD.succeed 0 |> BD.map ((+) 1))
                     |> Expect.equal (Ok 1)
         , test "map2" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode (BD.map2 (,) (BD.succeed 0) (BD.succeed 1))
                     |> Expect.equal (Ok ( 0, 1 ))
         , test "apply" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed (,)
                             |> BD.apply (BD.succeed 0)
@@ -111,7 +95,7 @@ decoder =
                     |> Expect.equal (Ok ( 0, 1 ))
         , test "ignore does not change result" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed (,)
                             |> BD.apply (BD.succeed 0)
@@ -125,7 +109,7 @@ decoder =
                     |> Expect.equal (Ok ( 0, 1 ))
         , test "ignore can cause fail" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed identity
                             |> BD.apply (BD.succeed "What??")
@@ -134,7 +118,7 @@ decoder =
                     |> Expect.err
         , test "infix apply" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed (,)
                             |= BD.succeed 0
@@ -143,7 +127,7 @@ decoder =
                     |> Expect.equal (Ok ( 0, 1 ))
         , test "infix ignore" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed (,)
                             |= BD.succeed 0
@@ -157,7 +141,7 @@ decoder =
                     |> Expect.equal (Ok ( 0, 1 ))
         , test "position is inititalized at 0" <|
             \_ ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed identity
                             |= BD.position
@@ -165,19 +149,19 @@ decoder =
                     |> Expect.equal (Ok 0)
         , fuzz Fuzz.int "position can be set with goto" <|
             \n ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed identity
                             |. BD.goto n
                             |= BD.position
                         )
                     |> Expect.equal (Ok n)
-        , fuzz Fuzz.int "position can be moved" <|
+        , fuzz Fuzz.int "position can be skipped" <|
             \n ->
-                Array.empty
+                Binary.int8 0
                     |> BD.decode
                         (BD.succeed identity
-                            |. BD.move n
+                            |. BD.skip n
                             |= BD.position
                         )
                     |> Expect.equal (Ok n)

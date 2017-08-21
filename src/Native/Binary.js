@@ -1,6 +1,6 @@
 var _user$project$Native_Binary = (function () {
   const Scheduler = _elm_lang$core$Native_Scheduler
-  const Array = _elm_lang$core$Native_Array
+  const List = _elm_lang$core$Native_List
 
   function Just (a) {
     return {ctor: 'Just',
@@ -27,89 +27,129 @@ var _user$project$Native_Binary = (function () {
     return buffer
   }
 
-  function int16 (a) {
+  function int16 (le, a) {
     var buffer = new ArrayBuffer(2)
     var view = new DataView(buffer)
-    view.setInt16(0, a)
+    view.setInt16(0, a, le)
     return buffer
   }
 
-  function uint16 (a) {
+  function uint16 (le, a) {
     var buffer = new ArrayBuffer(2)
     var view = new DataView(buffer)
-    view.setInt16(0, a)
+    view.setInt16(0, a, le)
     return buffer
   }
 
-  function int32 (a) {
+  function int32 (le, a) {
     var buffer = new ArrayBuffer(4)
     var view = new DataView(buffer)
-    view.setInt32(0, a)
+    view.setInt32(0, a, le)
     return buffer
   }
 
-  function uint32 (a) {
+  function uint32 (le, a) {
     var buffer = new ArrayBuffer(4)
     var view = new DataView(buffer)
-    view.setUint32(0, a)
+    view.setUint32(0, a, le)
     return buffer
   }
 
   //
 
-  function getInt8 (offset, buffer) {
+  function getInt8 (offset, view) {
     try {
-      var view = new DataView(buffer)
       return Just(view.getInt8(offset))
     } catch (e) {
       return Nothing
     }
   }
 
+  function getUint8 (offset, view) {
+    try {
+      return Just(view.getUint8(offset))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
+  function getInt16 (le, offset, view) {
+    try {
+      return Just(view.getInt16(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
+  function getUint16 (le, offset, view) {
+    try {
+      return Just(view.getUint16(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
+  function getInt32 (le, offset, view) {
+    try {
+      return Just(view.getInt32(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
+  function getUint32 (le, offset, view) {
+    try {
+      return Just(view.getUint32(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
   //
 
-  function toArrayBuffer (bytes) {
-    var length = Array.length(bytes)
-    var buffer = new ArrayBuffer(length)
-    var view = new Uint8Array(buffer)
-    for (var i = 0; i < length; i++) {
-      view.set(new Uint8Array(A2(Array.get, i, bytes)), i)
+  function concat (elmBuffers) {
+    var buffers = List.toArray(elmBuffers)
+
+    var length = buffers.reduce(function (total, buffer) {
+      return total + buffer.byteLength
+    }, 0)
+
+    var out = new ArrayBuffer(length)
+    var view = new Uint8Array(out)
+    var offset = 0
+
+    for (var i = 0; i < buffers.length; i++) {
+      var buffer = buffers[i]
+      view.set(new Uint8Array(buffer), offset)
+      offset = offset + buffer.byteLength
     }
-    return buffer
+
+    return out
   }
 
-  function fromArrayBuffer (buffer) {
-    var length = buffer.byteLength
-    var bytes = Array.empty
-    for (var i = 0; i < length; i++) {
-      bytes = A2(Array.push, buffer.slice(i, i + 1), bytes)
-    }
-    return bytes
-  }
+  //
 
-  function test () {
-    var buffer = new ArrayBuffer(20)
-    var view = new DataView(buffer)
-    for (var i = 0; i < 20; i++) {
-      view.setInt8(i, i)
-    }
-    return buffer
+  function dataView (buffer) {
+    return new DataView(buffer)
   }
 
   return {
     zeros: zeros,
     int8: int8,
     uint8: uint8,
-    int16: int16,
-    uint16: uint16,
-    int32: int32,
-    uint32: uint32,
+    int16: F2(int16),
+    uint16: F2(uint16),
+    int32: F2(int32),
+    uint32: F2(uint32),
     //
     getInt8: F2(getInt8),
+    getUint8: F2(getUint8),
+    getInt16: F3(getInt16),
+    getUint16: F3(getUint16),
+    getInt32: F3(getInt32),
+    getUint32: F3(getUint32),
     //
-    toArrayBuffer: toArrayBuffer,
-    fromArrayBuffer: fromArrayBuffer,
+    concat: concat,
     //
-    test: test
+    dataView: dataView
   }
 })()

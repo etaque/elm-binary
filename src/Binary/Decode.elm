@@ -14,16 +14,27 @@ module Binary.Decode
         , ignore
         , (|.)
           --
+        , sequence
+        , repeat
+        , many
+          --
         , position
-        , move
+        , skip
         , goto
           --
         , int8
+        , uint8
+        , int16
+        , int16LE
+        , uint16
+        , uint16LE
+        , int32
+        , int32LE
+        , uint32
+        , uint32LE
         )
 
-import Array exposing (Array)
-import Binary exposing (Byte)
-import Binary.LowLevel
+import Binary exposing (ArrayBuffer)
 
 
 -- Basics that could also go into a more generic Array.Decode
@@ -32,7 +43,7 @@ import Binary.LowLevel
 type alias State =
     { position : Int
     , context : List ( Int, String )
-    , source : Array Byte
+    , source : DataView
     }
 
 
@@ -43,14 +54,22 @@ type alias Error =
     }
 
 
+{-| A binary decoder
+-}
 type Decoder a
     = Decoder (State -> Result Error ( State, a ))
 
 
-decode : Decoder a -> Array Byte -> Result Error a
+{-| Run the decoder
+-}
+decode : Decoder a -> ArrayBuffer -> Result Error a
 decode (Decoder f) source =
-    f (State 0 [] source)
+    f (State 0 [] (dataView source))
         |> Result.map Tuple.second
+
+
+
+-- PRIMITIVES
 
 
 succeed : a -> Decoder a
@@ -94,35 +113,19 @@ map2 f decoderA decoderB =
             )
 
 
-
--- map2 : (a -> b -> c) -> Decoder a -> Decoder b -> Decoder c
--- map2 f (Decoder decoderA) (Decoder decoderB) =
---     Decoder
---         (\state1 ->
---             decoderA state1
---                 |> Result.andThen
---                     (\( state2, a ) ->
---                         decoderB state2
---                             |> Result.map (\( state3, b ) -> ( state3, f a b ))
---                     )
---         )
---
-
-
 apply : Decoder a -> Decoder (a -> b) -> Decoder b
 apply =
-    -- Note: (|>) : a -> (a -> b) -> b
     map2 (|>)
 
 
 (|=) : Decoder (a -> b) -> Decoder a -> Decoder b
 (|=) =
-    flip apply
+    map2 (<|)
 
 
 ignore : Decoder b -> Decoder a -> Decoder a
 ignore =
-    flip (|.)
+    map2 (flip always)
 
 
 (|.) : Decoder a -> Decoder b -> Decoder a
@@ -136,6 +139,54 @@ infixl 5 |=
 infixl 5 |.
 
 
+{-| Sequence a list of decoders
+-}
+sequence : List (Decoder a) -> Decoder (List a)
+sequence decoders =
+    case decoders of
+        [] ->
+            succeed []
+
+        headDecoder :: tailDecoders ->
+            headDecoder
+                |> andThen
+                    (\headValue ->
+                        sequence tailDecoders
+                            |> map (\tailValues -> headValue :: tailValues)
+                    )
+
+
+{-| Repeat a decoder n times and collect decoded values in a list
+-}
+repeat : Int -> Decoder a -> Decoder (List a)
+repeat n decoder =
+    sequence (List.repeat n decoder)
+
+
+{-| Apply a decoder many times until it fails
+-}
+many : Decoder a -> Decoder (List a)
+many (Decoder decoder) =
+    let
+        manyHelp decoder state =
+            case decoder state of
+                Ok ( newState, a ) ->
+                    manyHelp decoder newState
+                        |> Result.map (Tuple.mapSecond ((::) a))
+
+                Err _ ->
+                    Ok ( state, [] )
+    in
+        Decoder
+            (\state ->
+                manyHelp decoder state
+            )
+
+
+
+-- POSITION
+
+
 {-| Get current decoder position
 -}
 position : Decoder Int
@@ -145,8 +196,8 @@ position =
 
 {-| Move the decoder position by a relative offset.
 -}
-move : Int -> Decoder ()
-move n =
+skip : Int -> Decoder ()
+skip n =
     Decoder
         (\state ->
             Ok ( { state | position = state.position + n }, () )
@@ -164,7 +215,7 @@ goto n =
 
 
 
--- Byte specific
+-- INT
 
 
 {-| Decode int8
@@ -174,22 +225,153 @@ int8 =
     Decoder
         (\state ->
             state.source
-                |> Array.slice state.position (state.position + 1)
-                |> Binary.LowLevel.toArrayBuffer
-                |> Binary.LowLevel.getInt8 0
-                |> toResult { state | position = state.position + 1 } "could not get int8"
+                |> getInt8 state.position
+                |> toResult state 1 "could not get int8"
         )
+
+
+uint8 : Decoder Int
+uint8 =
+    Decoder
+        (\state ->
+            state.source
+                |> getUint8 state.position
+                |> toResult state 1 "could not get uint8"
+        )
+
+
+int16 : Decoder Int
+int16 =
+    Decoder
+        (\state ->
+            state.source
+                |> getInt16 False state.position
+                |> toResult state 2 "could not get int16"
+        )
+
+
+int16LE : Decoder Int
+int16LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getInt16 True state.position
+                |> toResult state 2 "could not get int16"
+        )
+
+
+uint16 : Decoder Int
+uint16 =
+    Decoder
+        (\state ->
+            state.source
+                |> getUint16 False state.position
+                |> toResult state 2 "could not get int16"
+        )
+
+
+uint16LE : Decoder Int
+uint16LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getUint16 True state.position
+                |> toResult state 2 "could not get int16"
+        )
+
+
+int32 : Decoder Int
+int32 =
+    Decoder
+        (\state ->
+            state.source
+                |> getInt32 False state.position
+                |> toResult state 4 "could not get int32"
+        )
+
+
+int32LE : Decoder Int
+int32LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getInt32 True state.position
+                |> toResult state 4 "could not get int32"
+        )
+
+
+uint32 : Decoder Int
+uint32 =
+    Decoder
+        (\state ->
+            state.source
+                |> getUint32 False state.position
+                |> toResult state 4 "could not get int32"
+        )
+
+
+uint32LE : Decoder Int
+uint32LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getUint32 True state.position
+                |> toResult state 4 "could not get int32"
+        )
+
+
+
+-- LOW LEVEL
+
+
+type DataView
+    = DataView
+
+
+dataView : ArrayBuffer -> DataView
+dataView =
+    Native.Binary.dataView
+
+
+getInt8 : Int -> DataView -> Maybe Int
+getInt8 =
+    Native.Binary.getInt8
+
+
+getUint8 : Int -> DataView -> Maybe Int
+getUint8 =
+    Native.Binary.getUint8
+
+
+getInt16 : Bool -> Int -> DataView -> Maybe Int
+getInt16 =
+    Native.Binary.getInt16
+
+
+getUint16 : Bool -> Int -> DataView -> Maybe Int
+getUint16 =
+    Native.Binary.getUint16
+
+
+getInt32 : Bool -> Int -> DataView -> Maybe Int
+getInt32 =
+    Native.Binary.getInt32
+
+
+getUint32 : Bool -> Int -> DataView -> Maybe Int
+getUint32 =
+    Native.Binary.getUint32
 
 
 
 -- HELPERS
 
 
-toResult : State -> String -> Maybe a -> Result Error ( State, a )
-toResult state errorMsg maybe =
+toResult : State -> Int -> String -> Maybe a -> Result Error ( State, a )
+toResult state offset errorMsg maybe =
     case maybe of
         Just a ->
-            Ok ( state, a )
+            Ok ( { state | position = state.position + offset }, a )
 
         Nothing ->
             Err (Error state.position state.context errorMsg)
