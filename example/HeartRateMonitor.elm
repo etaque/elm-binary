@@ -144,7 +144,8 @@ heartRateDecoder =
 
 
 type alias Model =
-    { service : Maybe Bluetooth.Service
+    { paused : Bool
+    , service : Maybe Bluetooth.Service
     , heartRateCharacteristic : Maybe Bluetooth.Characteristic
 
     --
@@ -155,7 +156,8 @@ type alias Model =
 
 init : Return Msg Model
 init =
-    { service = Nothing
+    { paused = False
+    , service = Nothing
     , heartRateCharacteristic = Nothing
 
     --
@@ -177,6 +179,8 @@ type Msg
     | ReadBodySensorLocation (Result () ArrayBuffer)
       --
     | GotHeartRate (Result String HeartRate)
+      --
+    | PauseToggle
 
 
 update : Msg -> Model -> Return Msg Model
@@ -234,6 +238,10 @@ update msg model =
                    )
                 |> Return.singleton
 
+        PauseToggle ->
+            { model | paused = not model.paused }
+                |> Return.singleton
+
 
 
 -- SUBSCRIPTIONS
@@ -243,7 +251,10 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.heartRateCharacteristic of
         Just characteristic ->
-            Bluetooth.notify characteristic (BD.decode heartRateDecoder >> GotHeartRate)
+            if not model.paused then
+                Bluetooth.notify characteristic (BD.decode heartRateDecoder >> GotHeartRate)
+            else
+                Sub.none
 
         Nothing ->
             Sub.none
@@ -259,4 +270,5 @@ view model =
         [ model |> toString |> H.text
         , H.br [] []
         , H.button [ HE.onClick Connect ] [ H.text "Connect" ]
+        , H.button [ HE.onClick PauseToggle ] [ H.text "PausToggle" ]
         ]

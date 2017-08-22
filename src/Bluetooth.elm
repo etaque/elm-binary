@@ -164,12 +164,6 @@ onCharacteristicValueChanged =
 
 
 -- Effect Manager
-{- Lot of work to do here!
-
-   Currently only one (the first) subscription is handled. We need a mechanism to identify which subscriptions already have a notify listener set up, which ones not and which notify processes can be killed. This requires some kind of `Dict` (as in Websocket). However we don't have a nice (comparable) identifier to use.
-
-   TODO: figure out a datastructure to track subscriptions and corresponding active processes.
--}
 
 
 type MySub msg
@@ -181,55 +175,88 @@ subMap f (Notify characteristic tagger) =
     Notify characteristic (tagger >> f)
 
 
-type alias State =
-    Maybe Process.Id
+type alias State msg =
+    { processes : List ( Characteristic, Process.Id )
+    , subs : List (MySub msg)
+    }
 
 
-init : Task Never State
+init : Task Never (State msg)
 init =
-    Nothing
+    { processes = []
+    , subs = []
+    }
         |> Task.succeed
 
 
 type Msg msg
-    = CharacteristicValueChanged (ArrayBuffer -> msg) ArrayBuffer
+    = ValueChanged Characteristic ArrayBuffer
 
 
-(&>) : Task x a -> Task x b -> Task x b
-(&>) t1 t2 =
-    t1 |> Task.andThen (\_ -> t2)
-
-
-onEffects : Platform.Router msg (Msg msg) -> List (MySub msg) -> State -> Task Never State
+onEffects : Platform.Router msg (Msg msg) -> List (MySub msg) -> State msg -> Task Never (State msg)
 onEffects router subs state =
-    case ( state, subs ) of
-        ( Just pid, [] ) ->
-            Process.kill pid
-                &> Task.succeed Nothing
+    let
+        listeningCharacteristics =
+            state.processes
+                |> List.map Tuple.first
 
-        ( Nothing, [] ) ->
-            Task.succeed Nothing
+        subscribedCharacteristics =
+            subs
+                |> List.map (\(Notify characteristic _) -> characteristic)
 
-        ( Nothing, (Notify characteristic tagger) :: rest ) ->
-            characteristic
-                |> onCharacteristicValueChanged
-                    (\buffer ->
-                        buffer
-                            |> CharacteristicValueChanged tagger
-                            |> Platform.sendToSelf router
+        spawnProcesses : Task Never (List ( Characteristic, Process.Id ))
+        spawnProcesses =
+            subscribedCharacteristics
+                |> List.filter (\characteristic -> not <| List.member characteristic listeningCharacteristics)
+                |> List.map
+                    (\characteristic ->
+                        characteristic
+                            |> onCharacteristicValueChanged (ValueChanged characteristic >> Platform.sendToSelf router)
+                            |> Process.spawn
+                            |> Task.map ((,) characteristic)
                     )
-                |> Process.spawn
-                |> Task.andThen (Just >> Task.succeed)
+                |> Task.sequence
 
-        ( Just pid, _ ) ->
-            Task.succeed state
+        killProcesses : Task Never (List Process.Id)
+        killProcesses =
+            state.processes
+                |> List.filterMap
+                    (\( characteristic, pid ) ->
+                        if not <| List.member characteristic subscribedCharacteristics then
+                            Just pid
+                        else
+                            Nothing
+                    )
+                |> List.map (\pid -> Process.kill pid |> Task.map (always pid))
+                |> Task.sequence
+    in
+        Task.map2
+            (\newProcesses killedProcesses ->
+                { state
+                    | subs = subs
+                    , processes =
+                        (state.processes
+                            ++ newProcesses
+                        )
+                            |> List.filter (\( _, pid ) -> not <| List.member pid killedProcesses)
+                }
+            )
+            spawnProcesses
+            killProcesses
 
 
-onSelfMsg : Platform.Router msg (Msg msg) -> Msg msg -> State -> Task Never State
+onSelfMsg : Platform.Router msg (Msg msg) -> Msg msg -> State msg -> Task Never (State msg)
 onSelfMsg router msg state =
     case msg of
-        CharacteristicValueChanged tagger buffer ->
-            buffer
-                |> tagger
-                |> Platform.sendToApp router
-                |> Task.andThen (always <| Task.succeed state)
+        ValueChanged characteristic buffer ->
+            state.subs
+                |> List.filterMap
+                    (\(Notify subCharacteristic tagger) ->
+                        if characteristic == subCharacteristic then
+                            Platform.sendToApp router (tagger buffer)
+                                |> Just
+                        else
+                            Nothing
+                    )
+                |> Task.sequence
+                |> Task.map (always state)
