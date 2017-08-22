@@ -55,6 +55,19 @@ var _user$project$Native_Binary = (function () {
     return buffer
   }
 
+  function float32 (le, a) {
+    var buffer = new ArrayBuffer(4)
+    var view = new DataView(buffer)
+    view.setFloat32(0, a, le)
+    return buffer
+  }
+
+  function float64 (le, a) {
+    var buffer = new ArrayBuffer(8)
+    var view = new DataView(buffer)
+    view.setFloat64(0, a, le)
+    return buffer
+  }
   //
 
   function getInt8 (offset, view) {
@@ -104,6 +117,23 @@ var _user$project$Native_Binary = (function () {
       return Nothing
     }
   }
+
+  function getFloat32 (le, offset, view) {
+    try {
+      return Just(view.getFloat32(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
+  function getFloat64 (le, offset, view) {
+    try {
+      return Just(view.getFloat64(offset, le))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
   //
 
   function concat (elmBuffers) {
@@ -140,16 +170,20 @@ var _user$project$Native_Binary = (function () {
     uint16: F2(uint16),
     int32: F2(int32),
     uint32: F2(uint32),
-    //
+    float32: F2(float32),
+    float64: F2(float64),
+
     getInt8: F2(getInt8),
     getUint8: F2(getUint8),
     getInt16: F3(getInt16),
     getUint16: F3(getUint16),
     getInt32: F3(getInt32),
     getUint32: F3(getUint32),
-    //
+    getFloat32: F3(getFloat32),
+    getFloat64: F3(getFloat64),
+
     concat: concat,
-    //
+
     dataView: dataView
   }
 })()

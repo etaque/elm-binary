@@ -78,6 +78,30 @@ uint32LE =
 --
 
 
+float32 : Float -> ArrayBuffer
+float32 =
+    Native.Binary.float32 False
+
+
+float32LE : Float -> ArrayBuffer
+float32LE =
+    Native.Binary.float32 True
+
+
+float64 : Float -> ArrayBuffer
+float64 =
+    Native.Binary.float64 False
+
+
+float64LE : Float -> ArrayBuffer
+float64LE =
+    Native.Binary.float64 True
+
+
+
+--
+
+
 concat : List ArrayBuffer -> ArrayBuffer
 concat =
     Native.Binary.concat

@@ -2,7 +2,6 @@ module Binary.Decode
     exposing
         ( Decoder
         , decode
-        , Error
           --
         , succeed
         , fail
@@ -32,12 +31,13 @@ module Binary.Decode
         , int32LE
         , uint32
         , uint32LE
+        , float32
+        , float32LE
+        , float64
+        , float64LE
         )
 
 import Binary exposing (ArrayBuffer)
-
-
--- Basics that could also go into a more generic Array.Decode
 
 
 type alias State =
@@ -54,13 +54,13 @@ type alias Error =
     }
 
 
-{-| A binary decoder
+{-| A binary decoder.
 -}
 type Decoder a
     = Decoder (State -> Result Error ( State, a ))
 
 
-{-| Run the decoder
+{-| Run the decoder.
 -}
 decode : Decoder a -> ArrayBuffer -> Result String a
 decode (Decoder f) source =
@@ -79,16 +79,22 @@ decode (Decoder f) source =
 -- PRIMITIVES
 
 
+{-| Decoder that succeeds without doing anything.
+-}
 succeed : a -> Decoder a
 succeed a =
     Decoder (\state -> Ok ( state, a ))
 
 
+{-| Decoder that always fails.
+-}
 fail : String -> Decoder a
 fail msg =
     Decoder (\state -> Err (Error state.position state.context msg))
 
 
+{-| Run a decoder and then run another decoder.
+-}
 andThen : (a -> Decoder b) -> Decoder a -> Decoder b
 andThen f (Decoder decoderA) =
     Decoder
@@ -105,11 +111,15 @@ andThen f (Decoder decoderA) =
         )
 
 
+{-| Transform result of a decoder.
+-}
 map : (a -> b) -> Decoder a -> Decoder b
 map f =
     andThen (f >> succeed)
 
 
+{-| Combine the result from two decoders.
+-}
 map2 : (a -> b -> c) -> Decoder a -> Decoder b -> Decoder c
 map2 f decoderA decoderB =
     decoderA
@@ -120,21 +130,29 @@ map2 f decoderA decoderB =
             )
 
 
+{-| Apply the result of a decoder to a decoder.
+-}
 apply : Decoder a -> Decoder (a -> b) -> Decoder b
 apply =
     map2 (|>)
 
 
+{-| Run a decoder and keep the value in the pipeline.
+-}
 (|=) : Decoder (a -> b) -> Decoder a -> Decoder b
 (|=) =
     map2 (<|)
 
 
+{-| Run a decoder and ignore thre result.
+-}
 ignore : Decoder b -> Decoder a -> Decoder a
 ignore =
     map2 (flip always)
 
 
+{-| Run a decoder and ignore the result.
+-}
 (|.) : Decoder a -> Decoder b -> Decoder a
 (|.) =
     map2 always
@@ -146,7 +164,7 @@ infixl 5 |=
 infixl 5 |.
 
 
-{-| Sequence a list of decoders
+{-| Sequence a list of decoders.
 -}
 sequence : List (Decoder a) -> Decoder (List a)
 sequence decoders =
@@ -163,14 +181,14 @@ sequence decoders =
                     )
 
 
-{-| Repeat a decoder n times and collect decoded values in a list
+{-| Repeat a decoder n times and collect decoded values in a list.
 -}
 repeat : Int -> Decoder a -> Decoder (List a)
 repeat n decoder =
     sequence (List.repeat n decoder)
 
 
-{-| Apply a decoder many times until it fails
+{-| Apply a decoder many times until it fails.
 -}
 many : Decoder a -> Decoder (List a)
 many (Decoder decoder) =
@@ -194,7 +212,7 @@ many (Decoder decoder) =
 -- POSITION
 
 
-{-| Get current decoder position
+{-| Get current decoder position.
 -}
 position : Decoder Int
 position =
@@ -225,7 +243,7 @@ goto n =
 -- INT
 
 
-{-| Decode int8
+{-| Decode int8.
 -}
 int8 : Decoder Int
 int8 =
@@ -237,6 +255,8 @@ int8 =
         )
 
 
+{-| Decode uint8.
+-}
 uint8 : Decoder Int
 uint8 =
     Decoder
@@ -263,7 +283,7 @@ int16LE =
         (\state ->
             state.source
                 |> getInt16 True state.position
-                |> toResult state 2 "could not get int16"
+                |> toResult state 2 "could not get int16LE"
         )
 
 
@@ -273,7 +293,7 @@ uint16 =
         (\state ->
             state.source
                 |> getUint16 False state.position
-                |> toResult state 2 "could not get int16"
+                |> toResult state 2 "could not get uint16"
         )
 
 
@@ -283,7 +303,7 @@ uint16LE =
         (\state ->
             state.source
                 |> getUint16 True state.position
-                |> toResult state 2 "could not get int16"
+                |> toResult state 2 "could not get uint16LE"
         )
 
 
@@ -303,7 +323,7 @@ int32LE =
         (\state ->
             state.source
                 |> getInt32 True state.position
-                |> toResult state 4 "could not get int32"
+                |> toResult state 4 "could not get int32LE"
         )
 
 
@@ -313,7 +333,7 @@ uint32 =
         (\state ->
             state.source
                 |> getUint32 False state.position
-                |> toResult state 4 "could not get int32"
+                |> toResult state 4 "could not get uint32"
         )
 
 
@@ -323,7 +343,47 @@ uint32LE =
         (\state ->
             state.source
                 |> getUint32 True state.position
-                |> toResult state 4 "could not get int32"
+                |> toResult state 4 "could not get uint32LE"
+        )
+
+
+float32 : Decoder Float
+float32 =
+    Decoder
+        (\state ->
+            state.source
+                |> getFloat32 False state.position
+                |> toResult state 4 "could not get float32"
+        )
+
+
+float32LE : Decoder Float
+float32LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getFloat32 True state.position
+                |> toResult state 4 "could not get float32LE"
+        )
+
+
+float64 : Decoder Float
+float64 =
+    Decoder
+        (\state ->
+            state.source
+                |> getFloat64 False state.position
+                |> toResult state 8 "could not get float64"
+        )
+
+
+float64LE : Decoder Float
+float64LE =
+    Decoder
+        (\state ->
+            state.source
+                |> getFloat64 True state.position
+                |> toResult state 8 "could not get float64LE"
         )
 
 
@@ -368,6 +428,16 @@ getInt32 =
 getUint32 : Bool -> Int -> DataView -> Maybe Int
 getUint32 =
     Native.Binary.getUint32
+
+
+getFloat32 : Bool -> Int -> DataView -> Maybe Float
+getFloat32 =
+    Native.Binary.getFloat32
+
+
+getFloat64 : Bool -> Int -> DataView -> Maybe Float
+getFloat64 =
+    Native.Binary.getFloat64
 
 
 

@@ -14,19 +14,20 @@ import Binary.Decode as BD exposing ((|=), (|.))
 suite : Test
 suite =
     describe "Binary"
-        [ encoding
+        [ basicTypes
         , decoder
         ]
 
 
-encoding : Test
-encoding =
+basicTypes : Test
+basicTypes =
     let
         basicTest : String -> Fuzz.Fuzzer a -> (a -> ArrayBuffer) -> BD.Decoder a -> Test
         basicTest name fuzzer encoder decoder =
             fuzz fuzzer name <|
                 \a ->
                     encoder a
+                        -- Repeat multiple times to make sure decoder shifts forward properly after successfull decoding
                         |> List.repeat 3
                         |> Binary.concat
                         |> BD.decode (BD.many decoder)
@@ -53,6 +54,34 @@ encoding =
             , basicTest "int32LE" (Fuzz.intRange -32768 32767) Binary.int32LE BD.int32LE
             , basicTest "uint32" (Fuzz.intRange 0 65535) Binary.uint32 BD.uint32
             , basicTest "uint32LE" (Fuzz.intRange 0 65535) Binary.uint32LE BD.uint32LE
+
+            -- Testing float32 is tricky as Elm uses 64 bit floats internally. We loose precision and can only check that it is close enough.
+            , fuzz (Fuzz.floatRange -10 10) "float32" <|
+                \a ->
+                    Binary.float32 a
+                        |> List.repeat 3
+                        |> Binary.concat
+                        |> BD.decode (BD.many BD.float32)
+                        |> Result.withDefault []
+                        |> List.map ((-) a)
+                        |> List.map abs
+                        |> List.maximum
+                        |> Maybe.withDefault 1000
+                        |> Expect.atMost 1.0e-6
+            , fuzz (Fuzz.floatRange -10 10) "float32LE" <|
+                \a ->
+                    Binary.float32LE a
+                        |> List.repeat 3
+                        |> Binary.concat
+                        |> BD.decode (BD.many BD.float32LE)
+                        |> Result.withDefault []
+                        |> List.map ((-) a)
+                        |> List.map abs
+                        |> List.maximum
+                        |> Maybe.withDefault 1000
+                        |> Expect.atMost 1.0e-6
+            , basicTest "float64" Fuzz.float Binary.float64 BD.float64
+            , basicTest "float64LE" Fuzz.float Binary.float64LE BD.float64LE
             ]
 
 
