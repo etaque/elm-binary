@@ -8,12 +8,12 @@ import Html.Events as HE
 
 import Task
 import Return exposing (Return)
+import Bitwise
 
 
 --
 
-import Array exposing (Array)
-import Binary exposing (Byte)
+import Binary exposing (ArrayBuffer)
 import Binary.Decode as BD exposing ((|.), (|=))
 import Bluetooth
 
@@ -88,15 +88,55 @@ bodySensorLocationDecoder =
 
 
 type alias HeartRate =
-    { heartRate : Int }
+    { flags : Int
+    , heartRate : Int
+    , sensorContact : Bool
+    , energyExpended : Maybe Int
+    , rrInterval : Maybe Int
+    }
 
 
+{-| See here for specification: <https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.heart_rate_measurement.xml&u=org.bluetooth.characteristic.heart_rate_measurement.xml>
+-}
 heartRateDecoder : BD.Decoder HeartRate
 heartRateDecoder =
-    BD.succeed HeartRate
-        -- The first byte holds some flags
-        |. BD.int8
-        |= BD.int8
+    let
+        isHearRate16bit flags =
+            (Bitwise.and flags 1) /= 0
+
+        sensorContact flags =
+            (Bitwise.and flags 2) /= 0
+
+        isEnergyExpendedPresent flags =
+            (Bitwise.and flags 8) /= 0
+
+        isRRIntervalPresent flags =
+            (Bitwise.and flags 16) /= 0
+    in
+        BD.uint8
+            |> BD.andThen
+                (\flags ->
+                    BD.succeed HeartRate
+                        |= BD.succeed flags
+                        |= (if isHearRate16bit flags then
+                                BD.uint16
+                            else
+                                BD.uint8
+                           )
+                        |= BD.succeed (sensorContact flags)
+                        |= (if isEnergyExpendedPresent flags then
+                                BD.uint16LE
+                                    |> BD.map Just
+                            else
+                                BD.succeed Nothing
+                           )
+                        |= (if isRRIntervalPresent flags then
+                                BD.uint16LE
+                                    |> BD.map Just
+                            else
+                                BD.succeed Nothing
+                           )
+                )
 
 
 
@@ -109,7 +149,7 @@ type alias Model =
 
     --
     , bodySensorLocation : Maybe BodySensorLocation
-    , heartRate : Maybe HeartRate
+    , heartRate : Result String HeartRate
     }
 
 
@@ -120,7 +160,7 @@ init =
 
     --
     , bodySensorLocation = Nothing
-    , heartRate = Nothing
+    , heartRate = Err "Nothing to decode yet"
     }
         |> Return.singleton
 
@@ -134,9 +174,9 @@ type Msg
     | GotService (Result () Bluetooth.Service)
     | GotHeartRateCharacteristic (Result () Bluetooth.Characteristic)
       --
-    | ReadBodySensorLocation (Result () (Array Byte))
+    | ReadBodySensorLocation (Result () ArrayBuffer)
       --
-    | GotHeartRate (Result BD.Error HeartRate)
+    | GotHeartRate (Result String HeartRate)
 
 
 update : Msg -> Model -> Return Msg Model
@@ -189,9 +229,8 @@ update msg model =
 
         GotHeartRate result ->
             result
-                |> Result.toMaybe
-                |> (\maybeHR ->
-                        { model | heartRate = maybeHR }
+                |> (\hr ->
+                        { model | heartRate = hr }
                    )
                 |> Return.singleton
 

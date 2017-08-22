@@ -62,10 +62,17 @@ type Decoder a
 
 {-| Run the decoder
 -}
-decode : Decoder a -> ArrayBuffer -> Result Error a
+decode : Decoder a -> ArrayBuffer -> Result String a
 decode (Decoder f) source =
     f (State 0 [] (dataView source))
         |> Result.map Tuple.second
+        |> Result.mapError
+            (\err ->
+                err.msg
+                    ++ " at position "
+                    ++ (toString err.position)
+             -- TODO: add context to error message
+            )
 
 
 
