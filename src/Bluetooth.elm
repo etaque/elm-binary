@@ -44,7 +44,7 @@ import Process
 
 --
 
-import BinaryDecoder.Byte exposing (ArrayBuffer)
+import Binary exposing (ArrayBuffer)
 
 
 --
@@ -195,6 +195,7 @@ type Msg msg
     = CharacteristicValueChanged (ArrayBuffer -> msg) ArrayBuffer
 
 
+(&>) : Task x a -> Task x b -> Task x b
 (&>) t1 t2 =
     t1 |> Task.andThen (\_ -> t2)
 

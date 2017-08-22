@@ -8,12 +8,13 @@ import Html.Events as HE
 
 import Task
 import Return exposing (Return)
+import Bitwise
 
 
 --
 
-import BinaryDecoder as BD exposing ((|.), (|=))
-import BinaryDecoder.Byte as BDB exposing (ArrayBuffer)
+import Binary exposing (ArrayBuffer)
+import Binary.Decode as BD exposing ((|.), (|=))
 import Bluetooth
 
 
@@ -42,9 +43,9 @@ type BodySensorLocation
     | Unknown
 
 
-bodySensorLocationDecoder : BDB.Decoder BodySensorLocation
+bodySensorLocationDecoder : BD.Decoder BodySensorLocation
 bodySensorLocationDecoder =
-    BDB.uint8
+    BD.int8
         |> BD.andThen
             (\i ->
                 case i of
@@ -87,15 +88,55 @@ bodySensorLocationDecoder =
 
 
 type alias HeartRate =
-    { heartRate : Int }
+    { flags : Int
+    , heartRate : Int
+    , sensorContact : Bool
+    , energyExpended : Maybe Int
+    , rrInterval : Maybe Int
+    }
 
 
-heartRateDecoder : BDB.Decoder HeartRate
+{-| See here for specification: <https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.heart_rate_measurement.xml&u=org.bluetooth.characteristic.heart_rate_measurement.xml>
+-}
+heartRateDecoder : BD.Decoder HeartRate
 heartRateDecoder =
-    BD.succeed HeartRate
-        -- The first byte holds some flags
-        |. BDB.uint8
-        |= BDB.uint8
+    let
+        isHearRate16bit flags =
+            (Bitwise.and flags 1) /= 0
+
+        sensorContact flags =
+            (Bitwise.and flags 2) /= 0
+
+        isEnergyExpendedPresent flags =
+            (Bitwise.and flags 8) /= 0
+
+        isRRIntervalPresent flags =
+            (Bitwise.and flags 16) /= 0
+    in
+        BD.uint8
+            |> BD.andThen
+                (\flags ->
+                    BD.succeed HeartRate
+                        |= BD.succeed flags
+                        |= (if isHearRate16bit flags then
+                                BD.uint16
+                            else
+                                BD.uint8
+                           )
+                        |= BD.succeed (sensorContact flags)
+                        |= (if isEnergyExpendedPresent flags then
+                                BD.uint16LE
+                                    |> BD.map Just
+                            else
+                                BD.succeed Nothing
+                           )
+                        |= (if isRRIntervalPresent flags then
+                                BD.uint16LE
+                                    |> BD.map Just
+                            else
+                                BD.succeed Nothing
+                           )
+                )
 
 
 
@@ -108,7 +149,7 @@ type alias Model =
 
     --
     , bodySensorLocation : Maybe BodySensorLocation
-    , heartRate : Maybe HeartRate
+    , heartRate : Result String HeartRate
     }
 
 
@@ -119,7 +160,7 @@ init =
 
     --
     , bodySensorLocation = Nothing
-    , heartRate = Nothing
+    , heartRate = Err "Nothing to decode yet"
     }
         |> Return.singleton
 
@@ -135,7 +176,7 @@ type Msg
       --
     | ReadBodySensorLocation (Result () ArrayBuffer)
       --
-    | GotHeartRate (Result BDB.Error HeartRate)
+    | GotHeartRate (Result String HeartRate)
 
 
 update : Msg -> Model -> Return Msg Model
@@ -179,7 +220,7 @@ update msg model =
         ReadBodySensorLocation result ->
             result
                 |> Result.andThen
-                    (BDB.decode bodySensorLocationDecoder
+                    (BD.decode bodySensorLocationDecoder
                         >> Result.mapError (always ())
                     )
                 |> Result.toMaybe
@@ -188,9 +229,8 @@ update msg model =
 
         GotHeartRate result ->
             result
-                |> Result.toMaybe
-                |> (\maybeHR ->
-                        { model | heartRate = maybeHR }
+                |> (\hr ->
+                        { model | heartRate = hr }
                    )
                 |> Return.singleton
 
@@ -203,7 +243,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.heartRateCharacteristic of
         Just characteristic ->
-            Bluetooth.notify characteristic (BDB.decode heartRateDecoder >> GotHeartRate)
+            Bluetooth.notify characteristic (BD.decode heartRateDecoder >> GotHeartRate)
 
         Nothing ->
             Sub.none
