@@ -10,9 +10,7 @@ var _user$project$Native_Bluetooth = (function () {
 
   function requestDevice (options) {
     try {
-      var request = navigator.bluetooth.requestDevice({
-        filters: [{services: ['heart_rate']}]
-      })
+      var request = navigator.bluetooth.requestDevice(options)
       return request
     } catch (e) {
       // Return a rejected Promise if the request fails here

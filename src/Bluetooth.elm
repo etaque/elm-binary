@@ -1,7 +1,8 @@
 effect module Bluetooth
     where { subscription = MySub }
     exposing
-        ( RequestOptions
+        ( RequestOptions(..)
+        , Filter(..)
         , Request
         , requestDevice
           --
@@ -34,12 +35,20 @@ effect module Bluetooth
 
 @docs Characteristic, getCharacteristic, readValue, notify
 
-TODO: writeValue (requires a way to encode binary data)
+TODO:
+
+  - writeValue (requires a way to encode binary data)
+  - use `BluetoothUUID` and require ids to be UUIDs
 
 -}
 
 import Task exposing (Task)
 import Process
+
+
+--
+
+import Json.Encode as JE
 
 
 --
@@ -53,12 +62,44 @@ import Native.Bluetooth
 
 
 {-| Options while requesting a device (<https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetooth-requestdevice>).
-
-TODO: implement properly. Currently options are hardcoded in the Native binding.
-
 -}
-type alias RequestOptions =
-    ()
+type RequestOptions
+    = Filters (List Filter)
+    | AcceptAllDevices (List String)
+
+
+encodeRequestOptions : RequestOptions -> JE.Value
+encodeRequestOptions options =
+    case options of
+        Filters filters ->
+            JE.object [ ( "filters", filters |> List.map encodeFilter |> JE.list ) ]
+
+        AcceptAllDevices optionalServices ->
+            JE.object
+                [ ( "acceptAllDevices", JE.bool True )
+                , ( "optionalServices", optionalServices |> List.map JE.string |> JE.list )
+                ]
+
+
+{-| Filter for request a device. See <https://webbluetoothcg.github.io/web-bluetooth/#matches-a-filter> for details.
+-}
+type Filter
+    = Name String
+    | NamePrefix String
+    | Services (List String)
+
+
+encodeFilter : Filter -> JE.Value
+encodeFilter filter =
+    case filter of
+        Name name ->
+            JE.object [ ( "name", JE.string name ) ]
+
+        NamePrefix prefix ->
+            JE.object [ ( "namePrefix", JE.string prefix ) ]
+
+        Services services ->
+            JE.object [ ( "services", services |> List.map JE.string |> JE.list ) ]
 
 
 {-| A request to the user to connect with a device
@@ -78,7 +119,7 @@ TODO: Check if this could be implemented in a Task with the `isTrusted` attribut
 -}
 requestDevice : RequestOptions -> Request
 requestDevice requestOptions =
-    Native.Bluetooth.requestDevice requestOptions
+    Native.Bluetooth.requestDevice (requestOptions |> encodeRequestOptions)
 
 
 

@@ -190,7 +190,7 @@ update msg model =
             model
                 |> Return.singleton
                 |> Return.command
-                    (Bluetooth.requestDevice ()
+                    (Bluetooth.requestDevice (Bluetooth.Filters [ Bluetooth.Services [ "heart_rate" ] ])
                         |> Bluetooth.connect
                         |> Task.andThen (Bluetooth.getPrimaryService "heart_rate")
                         |> Task.attempt GotService
