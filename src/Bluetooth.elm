@@ -6,6 +6,8 @@ effect module Bluetooth
         , Request
         , requestDevice
           --
+        , Error(..)
+          --
         , Device
         , connect
           --
@@ -54,6 +56,7 @@ import Json.Encode as JE
 --
 
 import Binary exposing (ArrayBuffer)
+import Binary.Decode
 
 
 --
@@ -126,6 +129,21 @@ requestDevice requestOptions =
 --
 
 
+{-| Error types
+
+TODO: figure out all possible error types and get rid of Other
+
+-}
+type Error
+    = NoBluetooth
+    | DecodeError String
+    | Other String
+
+
+
+--
+
+
 {-| A bluetooth device
 -}
 type Device
@@ -137,7 +155,7 @@ type Device
 Note: this will automatically create a connection to the `BluetoothRemoteGATTServer` (<https://webbluetoothcg.github.io/web-bluetooth/#bluetoothremotegattserver>). This is not automatically done in the pure WebBluetooth API. I don't see any reason why anyone would not want to directly connect with the `BluetoothRemoteGATTServer`.
 
 -}
-connect : Request -> Task () Device
+connect : Request -> Task Error Device
 connect =
     Native.Bluetooth.connect
 
@@ -157,7 +175,7 @@ type Service
 Identifier can be an UUID or an alias to an UUID (e.g. `heart_rate`).
 
 -}
-getPrimaryService : String -> Device -> Task () Service
+getPrimaryService : String -> Device -> Task Error Service
 getPrimaryService =
     Native.Bluetooth.getPrimaryService
 
@@ -174,15 +192,32 @@ type Characteristic
 
 {-| Get a characteristic
 -}
-getCharacteristic : String -> Service -> Task () Characteristic
+getCharacteristic : String -> Service -> Task Error Characteristic
 getCharacteristic =
     Native.Bluetooth.getCharacteristic
 
 
 {-| Read a value from a characteristic
+
+NOTE: This does not allow direct access to the raw ArrayBuffer but makes the usual case much easier. Maybe `readValueRaw` should be exposed or there should be a `Binary.Decoder.raw : Decoder ArrayBuffer`.
+
 -}
-readValue : Characteristic -> Task () ArrayBuffer
-readValue =
+readValue : Binary.Decode.Decoder a -> Characteristic -> Task Error a
+readValue decoder characteristic =
+    readValueRaw characteristic
+        |> Task.andThen
+            (\buffer ->
+                case (Binary.Decode.decode decoder buffer) of
+                    Ok a ->
+                        Task.succeed a
+
+                    Err err ->
+                        Task.fail (DecodeError err)
+            )
+
+
+readValueRaw : Characteristic -> Task Error ArrayBuffer
+readValueRaw =
     Native.Bluetooth.readValue
 
 

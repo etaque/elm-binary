@@ -31,7 +31,11 @@ var _user$project$Native_Bluetooth = (function () {
         callback(scheduler.succeed(gattServer.device.id))
       }).catch(function (e) {
         console.log(e)
-        callback(scheduler.fail())
+        if (e instanceof TypeError) {
+          callback(scheduler.fail({ctor: 'NoBluetooth'}))
+        } else {
+          callback(scheduler.fail({ctor: 'Unknown', _0: e.message}))
+        }
       })
     })
   }
@@ -48,7 +52,7 @@ var _user$project$Native_Bluetooth = (function () {
         callback(scheduler.succeed(symbol))
       }).catch(function (e) {
         console.log(e)
-        callback(scheduler.fail())
+        callback(scheduler.fail({ctor: 'Unknown', _0: e.message}))
       })
     })
   }
@@ -63,7 +67,7 @@ var _user$project$Native_Bluetooth = (function () {
         callback(scheduler.succeed(symbol))
       }).catch(function (e) {
         console.log(e)
-        callback(scheduler.fail())
+        callback(scheduler.fail({ctor: 'Unknown', _0: e.message}))
       })
     })
   }
@@ -77,7 +81,7 @@ var _user$project$Native_Bluetooth = (function () {
         callback(scheduler.succeed(value))
       }).catch(function (e) {
         console.log(e)
-        callback(scheduler.fail())
+        callback(scheduler.fail({ctor: 'Unknown', _0: e.message}))
       })
     })
   }

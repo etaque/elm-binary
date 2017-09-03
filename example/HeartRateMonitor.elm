@@ -9,11 +9,11 @@ import Html.Events as HE
 import Task
 import Return exposing (Return)
 import Bitwise
+import Loadable as L
 
 
 --
 
-import Binary exposing (ArrayBuffer)
 import Binary.Decode as BD exposing ((|.), (|=))
 import Bluetooth
 
@@ -145,24 +145,24 @@ heartRateDecoder =
 
 type alias Model =
     { paused : Bool
-    , service : Maybe Bluetooth.Service
-    , heartRateCharacteristic : Maybe Bluetooth.Characteristic
+    , service : L.Loadable Bluetooth.Error Bluetooth.Service
+    , heartRateCharacteristic : L.Loadable Bluetooth.Error Bluetooth.Characteristic
 
     --
-    , bodySensorLocation : Maybe BodySensorLocation
-    , heartRate : Result String HeartRate
+    , bodySensorLocation : L.Loadable Bluetooth.Error BodySensorLocation
+    , heartRate : L.Loadable String HeartRate
     }
 
 
 init : Return Msg Model
 init =
     { paused = False
-    , service = Nothing
-    , heartRateCharacteristic = Nothing
+    , service = L.Init
+    , heartRateCharacteristic = L.Init
 
     --
-    , bodySensorLocation = Nothing
-    , heartRate = Err "Nothing to decode yet"
+    , bodySensorLocation = L.Init
+    , heartRate = L.Init
     }
         |> Return.singleton
 
@@ -173,10 +173,10 @@ init =
 
 type Msg
     = Connect
-    | GotService (Result () Bluetooth.Service)
-    | GotHeartRateCharacteristic (Result () Bluetooth.Characteristic)
+    | GotService (Result Bluetooth.Error Bluetooth.Service)
+    | GotHeartRateCharacteristic (Result Bluetooth.Error Bluetooth.Characteristic)
       --
-    | ReadBodySensorLocation (Result () ArrayBuffer)
+    | ReadBodySensorLocation (Result Bluetooth.Error BodySensorLocation)
       --
     | GotHeartRate (Result String HeartRate)
       --
@@ -196,47 +196,54 @@ update msg model =
                         |> Task.attempt GotService
                     )
 
-        GotService (Ok service) ->
-            { model | service = Just service }
-                |> Return.singleton
-                |> Return.command
-                    (Bluetooth.getCharacteristic "body_sensor_location" service
-                        |> Task.andThen Bluetooth.readValue
-                        |> Task.attempt ReadBodySensorLocation
-                    )
-                |> Return.command
-                    (Bluetooth.getCharacteristic "heart_rate_measurement" service
-                        |> Task.attempt GotHeartRateCharacteristic
-                    )
+        GotService result ->
+            case result of
+                Ok service ->
+                    { model | service = L.Loaded service }
+                        |> Return.singleton
+                        |> Return.command
+                            (Bluetooth.getCharacteristic "body_sensor_location" service
+                                |> Task.andThen (Bluetooth.readValue bodySensorLocationDecoder)
+                                |> Task.attempt ReadBodySensorLocation
+                            )
+                        |> Return.command
+                            (Bluetooth.getCharacteristic "heart_rate_measurement" service
+                                |> Task.attempt GotHeartRateCharacteristic
+                            )
 
-        GotService (Err ()) ->
-            model
-                |> Return.singleton
+                Err err ->
+                    { model | service = L.Error err }
+                        |> Return.singleton
 
         GotHeartRateCharacteristic result ->
-            result
-                |> Result.toMaybe
-                |> (\maybeCharacteristic ->
-                        { model | heartRateCharacteristic = maybeCharacteristic }
-                   )
-                |> Return.singleton
+            case result of
+                Ok characteristic ->
+                    { model | heartRateCharacteristic = L.Loaded characteristic }
+                        |> Return.singleton
+
+                Err err ->
+                    { model | heartRateCharacteristic = L.Error err }
+                        |> Return.singleton
 
         ReadBodySensorLocation result ->
-            result
-                |> Result.andThen
-                    (BD.decode bodySensorLocationDecoder
-                        >> Result.mapError (always ())
-                    )
-                |> Result.toMaybe
-                |> (\sensorLocation -> { model | bodySensorLocation = sensorLocation })
-                |> Return.singleton
+            case result of
+                Ok location ->
+                    { model | bodySensorLocation = L.Loaded location }
+                        |> Return.singleton
+
+                Err err ->
+                    { model | bodySensorLocation = L.Error err }
+                        |> Return.singleton
 
         GotHeartRate result ->
-            result
-                |> (\hr ->
-                        { model | heartRate = hr }
-                   )
-                |> Return.singleton
+            case result of
+                Ok hr ->
+                    { model | heartRate = L.Loaded hr }
+                        |> Return.singleton
+
+                Err err ->
+                    { model | heartRate = L.Error err }
+                        |> Return.singleton
 
         PauseToggle ->
             { model | paused = not model.paused }
@@ -250,13 +257,13 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.heartRateCharacteristic of
-        Just characteristic ->
+        L.Loaded characteristic ->
             if not model.paused then
                 Bluetooth.notify characteristic (BD.decode heartRateDecoder >> GotHeartRate)
             else
                 Sub.none
 
-        Nothing ->
+        _ ->
             Sub.none
 
 
