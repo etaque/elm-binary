@@ -1,6 +1,6 @@
 /* global F2, F3, _elm_lang$core$Native_List, _elm_lang$core$Native_Scheduler, _user$project$Native_Binary */
 
-var _user$project$Native_Binary = (function () {
+var _dividat$elm_bluetooth$Native_Binary = (function () {
   const List = _elm_lang$core$Native_List
 
   function Just (a) {

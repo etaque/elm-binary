@@ -1,7 +1,7 @@
 /* global F2, _elm_lang$core$Native_Scheduler, _user$project$Native_Binary */
 // TODO: remove debugs console.logs
 
-var _user$project$Native_Bluetooth = (function () {
+var _dividat$elm_bluetooth$Native_Bluetooth = (function () {
   var scheduler = _elm_lang$core$Native_Scheduler
 
   // NOTE: we need to store BluetoothDevices outside of Elm as it is an infinite structure (device.gatt.device = device) which makes the Elm runtime go into an infinte recursion
