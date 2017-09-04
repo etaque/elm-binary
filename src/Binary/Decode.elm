@@ -35,6 +35,9 @@ module Binary.Decode
         , float32LE
         , float64
         , float64LE
+          --
+        , arrayBuffer
+        , source
         )
 
 import Binary exposing (ArrayBuffer)
@@ -388,6 +391,38 @@ float64LE =
 
 
 
+-- ArrayBuffer
+
+
+{-| Read n bytes as an ArrayBuffer.
+-}
+arrayBuffer : Int -> Decoder ArrayBuffer
+arrayBuffer n =
+    Decoder
+        (\state ->
+            case (state.source |> fromDataView |> Binary.slice state.position (state.position + n)) of
+                Just buffer ->
+                    Ok ( { state | position = state.position + n }, buffer )
+
+                Nothing ->
+                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ (toString n)))
+        )
+
+
+{-| Get the source ArrayBuffer.
+
+Usefull when an API requires you to specify a `Decoder` when getting data, but you don't really need to decode the data (e.g. data is simply stored or passed on somewhere else).
+
+-}
+source : Decoder ArrayBuffer
+source =
+    Decoder
+        (\state ->
+            Ok ( state, state.source |> fromDataView )
+        )
+
+
+
 -- LOW LEVEL
 
 
@@ -398,6 +433,11 @@ type DataView
 dataView : ArrayBuffer -> DataView
 dataView =
     Native.Binary.dataView
+
+
+fromDataView : DataView -> ArrayBuffer
+fromDataView =
+    Native.Binary.fromDataView
 
 
 getInt8 : Int -> DataView -> Maybe Int

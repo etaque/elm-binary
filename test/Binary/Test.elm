@@ -14,8 +14,44 @@ import Binary.Decode as BD exposing ((|=), (|.))
 suite : Test
 suite =
     describe "Binary"
-        [ basicTypes
+        [ basicOperations
+        , basicTypes
         , decoder
+        ]
+
+
+basicOperations : Test
+basicOperations =
+    describe "basic operations"
+        [ test "concat" <|
+            \_ ->
+                [ Binary.zeros 8, Binary.zeros 2, Binary.zeros 6 ]
+                    |> Binary.concat
+                    |> Binary.length
+                    |> Expect.equal (16)
+        , test "equality" <|
+            \_ ->
+                (Binary.uint32 0 /= Binary.uint32 1)
+                    |> Expect.true "Expecting uint32 0 /= uint32 1"
+        , fuzz (Fuzz.intRange 0 64) "lenght (zeros)" <|
+            \n ->
+                Binary.zeros n
+                    |> Binary.length
+                    |> Expect.equal n
+        , test "lenght (mixed types)" <|
+            \_ ->
+                [ Binary.float64 3.141, Binary.int32LE 42, Binary.uint8 0 ]
+                    |> Binary.concat
+                    |> Binary.length
+                    |> Expect.equal (8 + 4 + 1)
+        , fuzz (Fuzz.map2 (,) (Fuzz.intRange 0 28) (Fuzz.intRange -32768 32767)) "slice" <|
+            \( offset, v ) ->
+                [ Binary.zeros offset, Binary.int32 v, Binary.zeros (32 - 4 - offset) ]
+                    |> Binary.concat
+                    |> Binary.slice offset (offset + 4)
+                    |> Maybe.withDefault (Binary.zeros 4)
+                    |> BD.decode (BD.int32)
+                    |> Expect.equal (Ok v)
         ]
 
 
@@ -194,4 +230,14 @@ decoder =
                             |= BD.position
                         )
                     |> Expect.equal (Ok n)
+        , test "can get source ArrayBuffer" <|
+            \_ ->
+                Binary.zeros 16
+                    |> BD.decode (BD.source)
+                    |> Expect.equal (Ok <| Binary.zeros 16)
+        , test "can decode n bytes are ArrayBuffer" <|
+            \_ ->
+                Binary.zeros 16
+                    |> BD.decode (BD.arrayBuffer 8)
+                    |> Expect.equal (Ok <| Binary.zeros 8)
         ]

@@ -1,3 +1,4 @@
+/* global F2, _elm_lang$core$Native_Scheduler, _user$project$Native_Binary */
 // TODO: remove debugs console.logs
 
 var _user$project$Native_Bluetooth = (function () {

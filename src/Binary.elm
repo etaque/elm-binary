@@ -1,12 +1,19 @@
 module Binary exposing (..)
 
+{-| Binary data
+-}
+
 import Native.Binary
 
 
+{-| The basic binary type. Corresponds to a JavaScript ArrayBuffer.
+-}
 type ArrayBuffer
     = ArrayBuffer
 
 
+{-| Create an ArrayBuffer of n bytes filled with 0.
+-}
 zeros : Int -> ArrayBuffer
 zeros n =
     let
@@ -16,11 +23,15 @@ zeros n =
         Native.Binary.zeros n_
 
 
+{-| Encode as int8
+-}
 int8 : Int -> ArrayBuffer
 int8 =
     Native.Binary.int8
 
 
+{-| Encode as uint8
+-}
 uint8 : Int -> ArrayBuffer
 uint8 =
     Native.Binary.uint8
@@ -102,6 +113,22 @@ float64LE =
 --
 
 
+{-| Concat a list of ArrayBuffers to an ArrayBuffer.
+-}
 concat : List ArrayBuffer -> ArrayBuffer
 concat =
     Native.Binary.concat
+
+
+{-| Return lenght of ArrayBuffer in bytes.
+-}
+length : ArrayBuffer -> Int
+length =
+    Native.Binary.length
+
+
+{-| Get content of ArrayBuffer from specified begin byte offset (inclusive) to end (exclusive).
+-}
+slice : Int -> Int -> ArrayBuffer -> Maybe ArrayBuffer
+slice =
+    Native.Binary.slice

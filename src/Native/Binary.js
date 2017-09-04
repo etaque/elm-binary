@@ -1,5 +1,6 @@
+/* global F2, F3, _elm_lang$core$Native_List, _elm_lang$core$Native_Scheduler, _user$project$Native_Binary */
+
 var _user$project$Native_Binary = (function () {
-  const Scheduler = _elm_lang$core$Native_Scheduler
   const List = _elm_lang$core$Native_List
 
   function Just (a) {
@@ -156,10 +157,26 @@ var _user$project$Native_Binary = (function () {
     return out
   }
 
+  function length (buffer) {
+    return buffer.byteLength
+  }
+
+  function slice (begin, end, buffer) {
+    try {
+      return Just(buffer.slice(begin, end))
+    } catch (e) {
+      return Nothing
+    }
+  }
+
   //
 
   function dataView (buffer) {
     return new DataView(buffer)
+  }
+
+  function fromDataView (view) {
+    return view.buffer.slice(view.byteOffset)
   }
 
   return {
@@ -183,7 +200,10 @@ var _user$project$Native_Binary = (function () {
     getFloat64: F3(getFloat64),
 
     concat: concat,
+    length: length,
+    slice: F3(slice),
 
-    dataView: dataView
+    dataView: dataView,
+    fromDataView: fromDataView
   }
 })()
