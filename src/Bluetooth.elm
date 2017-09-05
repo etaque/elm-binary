@@ -18,6 +18,8 @@ effect module Bluetooth
         , getCharacteristic
         , readValue
         , notify
+          --
+        , onCharacteristicValueChanged
         )
 
 {-| Access the WebBluetooth API (<https://webbluetoothcg.github.io/web-bluetooth/>)
@@ -25,7 +27,12 @@ effect module Bluetooth
 
 # Requesting and connect with a device
 
-@dcs RequestOptions, Request, requestDevice, Device, connect
+@docs RequestOptions, Filter, Request, requestDevice, Device, connect
+
+
+# Error handling
+
+@docs Error
 
 
 # Services
@@ -36,6 +43,11 @@ effect module Bluetooth
 # Characteristic
 
 @docs Characteristic, getCharacteristic, readValue, notify
+
+
+# Low level
+
+@docs onCharacteristicValueChanged
 
 TODO:
 
@@ -232,6 +244,9 @@ notify characteristic tagger =
 
 
 {-| Add an event handler on the `charastericvaluechanged` event. The resulting task will never end, and when you kill the process it is on, it will detatch the relevant JavaScript event listener.
+
+NOTE: This is ment to be used if you are crearing your own Effects Manager. In most cases you want to use `notify`.
+
 -}
 onCharacteristicValueChanged : (ArrayBuffer -> Task Never ()) -> Characteristic -> Task Never Never
 onCharacteristicValueChanged =
