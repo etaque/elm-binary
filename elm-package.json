@@ -1,13 +1,13 @@
 {
     "version": "1.0.0",
-    "summary": "WebBluetooth bindings for Elm.",
-    "repository": "https://github.com/dividat/elm-bluetooth.git",
+    "summary": "Binary data Elm.",
+    "repository": "https://github.com/dividat/elm-binary.git",
     "license": "BSD3",
     "native-modules": true,
     "source-directories": [
         "src"
     ],
-    "exposed-modules": ["Bluetooth", "Binary"],
+    "exposed-modules": ["Binary"],
     "dependencies": {
         "elm-lang/core": "5.1.1 <= v < 6.0.0",
         "elm-lang/html": "2.0.0 <= v < 3.0.0"
