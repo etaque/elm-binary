@@ -6,12 +6,12 @@ import Test
 
 --
 
-import Binary.Test
+import Tests
 
 
 main : Test.Runner.Html.TestProgram
 main =
-    [ Binary.Test.suite
+    [ Tests.suite
     ]
         |> Test.concat
         |> Test.Runner.Html.run

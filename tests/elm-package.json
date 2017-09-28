@@ -1,14 +1,14 @@
 {
     "version": "1.0.0",
     "summary": "helpful summary of your project, less than 80 characters",
-    "repository": "https://github.com/dividat/elm-bluetooth.git",
+    "repository": "https://github.com/dividat/elm-binary.git",
     "license": "BSD3",
-    "native-modules": true,
     "source-directories": [
         ".",
         "../src"
     ],
     "exposed-modules": [],
+    "native-modules": true,
     "dependencies": {
         "elm-community/elm-test": "4.1.1 <= v < 5.0.0",
         "elm-community/html-test-runner": "1.0.6 <= v < 2.0.0",

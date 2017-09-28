@@ -1,4 +1,4 @@
-module Binary.Test exposing (suite)
+module Tests exposing (suite)
 
 import Test exposing (..)
 import Expect
