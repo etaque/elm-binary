@@ -2,6 +2,8 @@
 
 Binary data in Elm.
 
+This is very much inspired by https://github.com/jinjor/elm-binary-decoder.
+
 **_WARNING: Very experimental!_**
 
 ## Native modules
@@ -10,7 +12,7 @@ As this package uses Elm Native modules you will need to install with something 
 
 ## Todos
 
--   [ ] Equality test between `Binary.ArrayBuffer` does not work the way I expect: `Binary.uint32 0 == Binary.uint32 1` is `True`. Also see test case for this. I don't fully understnd how Elm checks equality. How can this be fixed?
+-   [ ] Equality test between `Binary.ArrayBuffer` does not work the way I expect: `Binary.uint32 0 == Binary.uint32 1` is `True`. Also see test case for this. I don't fully understand how Elm checks equality. How can this be fixed?
 
 Contributions are very welcome.
 
