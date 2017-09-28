@@ -1,4 +1,4 @@
-/* global F2, F3, _elm_lang$core$Native_List, _elm_lang$core$Native_Scheduler, _user$project$Native_Binary */
+/* global F2, F3, _elm_lang$core$Native_List  */
 
 var _dividat$elm_binary$Native_Binary = (function () {
   const List = _elm_lang$core$Native_List
