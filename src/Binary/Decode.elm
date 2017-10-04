@@ -137,14 +137,14 @@ map2 f decoderA decoderB =
 -}
 apply : Decoder a -> Decoder (a -> b) -> Decoder b
 apply =
-    map2 (|>)
+    map2 (\a f -> f a)
 
 
 {-| Run a decoder and keep the value in the pipeline.
 -}
 (|=) : Decoder (a -> b) -> Decoder a -> Decoder b
 (|=) =
-    map2 (<|)
+    map2 (\f a -> f a)
 
 
 {-| Run a decoder and ignore thre result.

@@ -64,7 +64,8 @@ basicTypes =
                 \a ->
                     encoder a
                         -- Repeat multiple times to make sure decoder shifts forward properly after successfull decoding
-                        |> List.repeat 3
+                        |>
+                            List.repeat 3
                         |> Binary.concat
                         |> BD.decode (BD.many decoder)
                         |> Expect.equal (Ok (a |> List.repeat 3))
@@ -90,8 +91,7 @@ basicTypes =
             , basicTest "int32LE" (Fuzz.intRange -32768 32767) Binary.int32LE BD.int32LE
             , basicTest "uint32" (Fuzz.intRange 0 65535) Binary.uint32 BD.uint32
             , basicTest "uint32LE" (Fuzz.intRange 0 65535) Binary.uint32LE BD.uint32LE
-
-            -- Testing float32 is tricky as Elm uses 64 bit floats internally. We loose precision and can only check that it is close enough.
+              -- Testing float32 is tricky as Elm uses 64 bit floats internally. We loose precision and can only check that it is close enough.
             , fuzz (Fuzz.floatRange -10 10) "float32" <|
                 \a ->
                     Binary.float32 a
@@ -212,7 +212,7 @@ decoder =
                             |= BD.position
                         )
                     |> Expect.equal (Ok 0)
-        , fuzz Fuzz.int "position can be set with goto" <|
+        , fuzz Fuzz.int "position can be set with goto (infix)" <|
             \n ->
                 Binary.int8 0
                     |> BD.decode
@@ -221,13 +221,31 @@ decoder =
                             |= BD.position
                         )
                     |> Expect.equal (Ok n)
-        , fuzz Fuzz.int "position can be skipped" <|
+        , fuzz Fuzz.int "position can be set with goto" <|
+            \n ->
+                Binary.int8 0
+                    |> BD.decode
+                        (BD.succeed identity
+                            |> BD.ignore (BD.goto n)
+                            |> BD.apply BD.position
+                        )
+                    |> Expect.equal (Ok n)
+        , fuzz Fuzz.int "position can be skipped (infix)" <|
             \n ->
                 Binary.int8 0
                     |> BD.decode
                         (BD.succeed identity
                             |. BD.skip n
                             |= BD.position
+                        )
+                    |> Expect.equal (Ok n)
+        , fuzz Fuzz.int "position can be skipped" <|
+            \n ->
+                Binary.int8 0
+                    |> BD.decode
+                        (BD.succeed identity
+                            |> BD.ignore (BD.skip n)
+                            |> BD.apply BD.position
                         )
                     |> Expect.equal (Ok n)
         , test "can get source ArrayBuffer" <|
