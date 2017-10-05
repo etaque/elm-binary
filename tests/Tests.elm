@@ -8,7 +8,7 @@ import Fuzz
 --
 
 import Binary exposing (ArrayBuffer)
-import Binary.Decode as BD exposing ((|=), (|.))
+import Binary.Decode as BD
 
 
 suite : Test
@@ -16,6 +16,7 @@ suite =
     describe "Binary"
         [ basicOperations
         , basicTypes
+        , algebraic
         , decoder
         ]
 
@@ -121,6 +122,34 @@ basicTypes =
             ]
 
 
+algebraic : Test
+algebraic =
+    let
+        additionFuzzer : Fuzz.Fuzzer (Int -> Int)
+        additionFuzzer =
+            Fuzz.int
+                |> Fuzz.map (\a -> (+) a)
+
+        extract : BD.Decoder a -> Result String a
+        extract decoder =
+            BD.decode decoder (Binary.zeros 10)
+    in
+        describe "Algebraic"
+            [ describe "Functor Laws"
+                [ fuzz Fuzz.int "identity preserved over map" <|
+                    \a ->
+                        (BD.map identity) (BD.succeed a)
+                            |> extract
+                            |> Expect.equal ((BD.succeed a) |> extract)
+                , fuzz (Fuzz.map3 (,,) additionFuzzer additionFuzzer Fuzz.int) "Function composition" <|
+                    \( f, g, value ) ->
+                        (BD.map (f >> g)) (BD.succeed value)
+                            |> extract
+                            |> Expect.equal (BD.apply (BD.succeed value) (BD.map2 (>>) (BD.succeed f) (BD.succeed g)) |> extract)
+                ]
+            ]
+
+
 decoder : Test
 decoder =
     describe "Decode"
@@ -181,46 +210,11 @@ decoder =
                             |> BD.ignore (BD.fail "Fail!")
                         )
                     |> Expect.err
-        , test "infix apply" <|
-            \_ ->
-                Binary.int8 0
-                    |> BD.decode
-                        (BD.succeed (,)
-                            |= BD.succeed 0
-                            |= BD.succeed 1
-                        )
-                    |> Expect.equal (Ok ( 0, 1 ))
-        , test "infix ignore" <|
-            \_ ->
-                Binary.int8 0
-                    |> BD.decode
-                        (BD.succeed (,)
-                            |= BD.succeed 0
-                            |. BD.succeed 2
-                            |= BD.succeed 1
-                            |. BD.succeed 2
-                            |. BD.succeed 3
-                            |. BD.succeed 5
-                            |. BD.succeed 2
-                        )
-                    |> Expect.equal (Ok ( 0, 1 ))
         , test "position is inititalized at 0" <|
             \_ ->
                 Binary.int8 0
-                    |> BD.decode
-                        (BD.succeed identity
-                            |= BD.position
-                        )
+                    |> BD.decode BD.position
                     |> Expect.equal (Ok 0)
-        , fuzz Fuzz.int "position can be set with goto (infix)" <|
-            \n ->
-                Binary.int8 0
-                    |> BD.decode
-                        (BD.succeed identity
-                            |. BD.goto n
-                            |= BD.position
-                        )
-                    |> Expect.equal (Ok n)
         , fuzz Fuzz.int "position can be set with goto" <|
             \n ->
                 Binary.int8 0
@@ -228,15 +222,6 @@ decoder =
                         (BD.succeed identity
                             |> BD.ignore (BD.goto n)
                             |> BD.apply BD.position
-                        )
-                    |> Expect.equal (Ok n)
-        , fuzz Fuzz.int "position can be skipped (infix)" <|
-            \n ->
-                Binary.int8 0
-                    |> BD.decode
-                        (BD.succeed identity
-                            |. BD.skip n
-                            |= BD.position
                         )
                     |> Expect.equal (Ok n)
         , fuzz Fuzz.int "position can be skipped" <|

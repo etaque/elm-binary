@@ -9,9 +9,7 @@ module Binary.Decode
         , map
         , map2
         , apply
-        , (|=)
         , ignore
-        , (|.)
           --
         , sequence
         , repeat
@@ -136,35 +134,15 @@ map2 f decoderA decoderB =
 {-| Apply the result of a decoder to a decoder.
 -}
 apply : Decoder a -> Decoder (a -> b) -> Decoder b
-apply =
-    map2 (\a f -> f a)
-
-
-{-| Run a decoder and keep the value in the pipeline.
--}
-(|=) : Decoder (a -> b) -> Decoder a -> Decoder b
-(|=) =
-    map2 (\f a -> f a)
+apply decoderA decoderF =
+    map2 (\f a -> f a) decoderF decoderA
 
 
 {-| Run a decoder and ignore thre result.
 -}
 ignore : Decoder b -> Decoder a -> Decoder a
-ignore =
-    map2 (flip always)
-
-
-{-| Run a decoder and ignore the result.
--}
-(|.) : Decoder a -> Decoder b -> Decoder a
-(|.) =
-    map2 always
-
-
-infixl 5 |=
-
-
-infixl 5 |.
+ignore decoderB decoderA =
+    map2 (\a b -> a) decoderA decoderB
 
 
 {-| Sequence a list of decoders.

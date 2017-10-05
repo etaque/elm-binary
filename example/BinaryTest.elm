@@ -6,7 +6,7 @@ import Return exposing (Return)
 --
 
 import Binary
-import Binary.Decode as BD exposing ((|=), (|.))
+import Binary.Decode as BD
 
 
 --
@@ -74,13 +74,15 @@ type alias SomeStruct =
 
 view : Model -> H.Html Msg
 view model =
-    Binary.int8 5
-        |> List.repeat 4
+    [ List.range 0 10
+        |> List.map (Binary.uint8)
         |> Binary.concat
         |> BD.decode
-            (BD.succeed identity
-                |. BD.int8
-                |= BD.position
+            (BD.succeed (,)
+                |> BD.apply (BD.uint8)
+                |> BD.ignore (BD.uint8)
+                |> BD.apply (BD.uint8)
             )
+    ]
         |> toString
         |> H.text
