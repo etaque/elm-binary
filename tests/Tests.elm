@@ -65,8 +65,7 @@ basicTypes =
                 \a ->
                     encoder a
                         -- Repeat multiple times to make sure decoder shifts forward properly after successfull decoding
-                        |>
-                            List.repeat 3
+                        |> List.repeat 3
                         |> Binary.concat
                         |> BD.decode (BD.many decoder)
                         |> Expect.equal (Ok (a |> List.repeat 3))
@@ -92,7 +91,8 @@ basicTypes =
             , basicTest "int32LE" (Fuzz.intRange -32768 32767) Binary.int32LE BD.int32LE
             , basicTest "uint32" (Fuzz.intRange 0 65535) Binary.uint32 BD.uint32
             , basicTest "uint32LE" (Fuzz.intRange 0 65535) Binary.uint32LE BD.uint32LE
-              -- Testing float32 is tricky as Elm uses 64 bit floats internally. We loose precision and can only check that it is close enough.
+
+            -- Testing float32 is tricky as Elm uses 64 bit floats internally. We loose precision and can only check that it is close enough.
             , fuzz (Fuzz.floatRange -10 10) "float32" <|
                 \a ->
                     Binary.float32 a
@@ -119,6 +119,12 @@ basicTypes =
                         |> Expect.atMost 1.0e-6
             , basicTest "float64" Fuzz.float Binary.float64 BD.float64
             , basicTest "float64LE" Fuzz.float Binary.float64LE BD.float64LE
+            , basicTest "char" Fuzz.char Binary.char BD.char
+            , fuzz Fuzz.string "string (fixed-lenght)" <|
+                \a ->
+                    Binary.string a
+                        |> BD.decode (BD.string (String.length a))
+                        |> Expect.equal (Ok a)
             ]
 
 

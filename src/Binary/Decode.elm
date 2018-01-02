@@ -34,11 +34,58 @@ module Binary.Decode
         , float64
         , float64LE
           --
+        , char
+        , string
+          --
         , arrayBuffer
         , source
         )
 
+{-| Parser combinator for decoding binary messages.
+
+
+# Basics
+
+@docs Decoder, decode
+
+
+# Combinators
+
+@docs succeed, fail, andThen, map, map2, apply, ignore, sequence, repeat, many
+
+
+# Decoder position
+
+@docs position, skip, goto
+
+
+# Types
+
+
+## Integers
+
+@docs int8, uint8, int16, int16LE, uint16, uint16LE, int32, int32LE, uint32, uint32LE
+
+
+## Floats
+
+@docs float32, float32LE, float64, float64LE
+
+
+## Characters
+
+@docs char, string
+
+
+## Binary
+
+@docs arrayBuffer, source
+
+-}
+
 import Binary exposing (ArrayBuffer)
+import Char
+import String
 
 
 type alias State =
@@ -248,6 +295,8 @@ uint8 =
         )
 
 
+{-| Decode int16
+-}
 int16 : Decoder Int
 int16 =
     Decoder
@@ -258,6 +307,8 @@ int16 =
         )
 
 
+{-| Decode int16LE
+-}
 int16LE : Decoder Int
 int16LE =
     Decoder
@@ -268,6 +319,8 @@ int16LE =
         )
 
 
+{-| Decode uint16
+-}
 uint16 : Decoder Int
 uint16 =
     Decoder
@@ -278,6 +331,8 @@ uint16 =
         )
 
 
+{-| Decode uint16LE
+-}
 uint16LE : Decoder Int
 uint16LE =
     Decoder
@@ -288,6 +343,8 @@ uint16LE =
         )
 
 
+{-| Decode int32
+-}
 int32 : Decoder Int
 int32 =
     Decoder
@@ -298,6 +355,8 @@ int32 =
         )
 
 
+{-| Decode int32LE
+-}
 int32LE : Decoder Int
 int32LE =
     Decoder
@@ -308,6 +367,8 @@ int32LE =
         )
 
 
+{-| Decode uint32
+-}
 uint32 : Decoder Int
 uint32 =
     Decoder
@@ -318,6 +379,8 @@ uint32 =
         )
 
 
+{-| Decode int32LE
+-}
 uint32LE : Decoder Int
 uint32LE =
     Decoder
@@ -328,6 +391,8 @@ uint32LE =
         )
 
 
+{-| Decode float32
+-}
 float32 : Decoder Float
 float32 =
     Decoder
@@ -338,6 +403,8 @@ float32 =
         )
 
 
+{-| Decode float32LE
+-}
 float32LE : Decoder Float
 float32LE =
     Decoder
@@ -348,6 +415,8 @@ float32LE =
         )
 
 
+{-| Decode float64
+-}
 float64 : Decoder Float
 float64 =
     Decoder
@@ -358,6 +427,8 @@ float64 =
         )
 
 
+{-| Decode float64LE
+-}
 float64LE : Decoder Float
 float64LE =
     Decoder
@@ -366,6 +437,26 @@ float64LE =
                 |> getFloat64 True state.position
                 |> toResult state 8 "could not get float64LE"
         )
+
+
+
+--
+
+
+{-| Decode a single character
+-}
+char : Decoder Char
+char =
+    uint8
+        |> map Char.fromCode
+
+
+{-| Decode a string of fixed lenght
+-}
+string : Int -> Decoder String
+string n =
+    repeat n char
+        |> map String.fromList
 
 
 

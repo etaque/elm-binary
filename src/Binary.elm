@@ -2,23 +2,35 @@ module Binary exposing (..)
 
 {-| Binary data
 
+
 # Basics
+
 @docs ArrayBuffer, zeros
 @docs concat, length, slice
 
+
 # Encoding
 
+
 ## Integers
+
 @docs int8, uint8, int16, int16LE
 @docs uint16, uint16LE
 @docs int32, int32LE, uint32, uint32LE
 
+
 ## Floats
+
 @docs float32, float32LE, float64, float64LE
+
+@@ Characters
+@docs char, string
 
 -}
 
 import Native.Binary
+import Char
+import String
 
 
 {-| The basic binary type. Corresponds to a JavaScript ArrayBuffer.
@@ -146,6 +158,26 @@ float64 =
 float64LE : Float -> ArrayBuffer
 float64LE =
     Native.Binary.float64 True
+
+
+
+--
+
+
+{-| Encode a single character
+-}
+char : Char -> ArrayBuffer
+char =
+    Char.toCode >> uint8
+
+
+{-| Encode an ASCII String
+-}
+string : String -> ArrayBuffer
+string =
+    String.toList
+        >> List.map char
+        >> concat
 
 
 
