@@ -1,17 +1,12 @@
-module BinaryTest exposing (..)
+module BinaryTest exposing (Model, Msg(..), SomeStruct, init, main, subscriptions, update, view)
 
-import Return exposing (Return)
-
-
+--
 --
 
 import Binary
 import Binary.Decode as BD
-
-
---
-
 import Html as H
+import Return exposing (Return)
 
 
 main : Program Never Model Msg
@@ -75,13 +70,13 @@ type alias SomeStruct =
 view : Model -> H.Html Msg
 view model =
     [ List.range 0 10
-        |> List.map (Binary.uint8)
+        |> List.map Binary.uint8
         |> Binary.concat
         |> BD.decode
-            (BD.succeed (,)
-                |> BD.apply (BD.uint8)
-                |> BD.ignore (BD.uint8)
-                |> BD.apply (BD.uint8)
+            (BD.succeed (\a b -> ( a, b ))
+                |> BD.apply BD.uint8
+                |> BD.ignore BD.uint8
+                |> BD.apply BD.uint8
             )
     ]
         |> toString
