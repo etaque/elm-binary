@@ -1,16 +1,11 @@
 /*
 
 import Elm.Kernel.List exposing (toArray)
+import Maybe exposing (Just, Nothing)
 
 */
 
 var _dividat$elm_binary$Native_Binary = (function () {
-  function Just (a) {
-    return {ctor: 'Just',
-      _0: a}
-  }
-
-  const Nothing = {ctor: 'Nothing'}
 
   function zeros (n) {
     return new ArrayBuffer(n)
@@ -75,65 +70,65 @@ var _dividat$elm_binary$Native_Binary = (function () {
 
   function getInt8 (offset, view) {
     try {
-      return Just(view.getInt8(offset))
+      return __Maybe_Just(view.getInt8(offset))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getUint8 (offset, view) {
     try {
-      return Just(view.getUint8(offset))
+      return __Maybe_Just(view.getUint8(offset))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getInt16 (le, offset, view) {
     try {
-      return Just(view.getInt16(offset, le))
+      return __Maybe_Just(view.getInt16(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getUint16 (le, offset, view) {
     try {
-      return Just(view.getUint16(offset, le))
+      return __Maybe_Just(view.getUint16(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getInt32 (le, offset, view) {
     try {
-      return Just(view.getInt32(offset, le))
+      return __Maybe_Just(view.getInt32(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getUint32 (le, offset, view) {
     try {
-      return Just(view.getUint32(offset, le))
+      return __Maybe_Just(view.getUint32(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getFloat32 (le, offset, view) {
     try {
-      return Just(view.getFloat32(offset, le))
+      return __Maybe_Just(view.getFloat32(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
   function getFloat64 (le, offset, view) {
     try {
-      return Just(view.getFloat64(offset, le))
+      return __Maybe_Just(view.getFloat64(offset, le))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
@@ -165,9 +160,9 @@ var _dividat$elm_binary$Native_Binary = (function () {
 
   function slice (begin, end, buffer) {
     try {
-      return Just(buffer.slice(begin, end))
+      return __Maybe_Just(buffer.slice(begin, end))
     } catch (e) {
-      return Nothing
+      return __Maybe_Nothing
     }
   }
 
