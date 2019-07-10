@@ -1,4 +1,12 @@
-module Binary exposing (..)
+module Binary exposing
+    ( ArrayBuffer(..), zeros
+    , concat, length, slice
+    , int8, uint8, int16, int16LE
+    , uint16, uint16LE
+    , int32, int32LE, uint32, uint32LE
+    , float32, float32LE, float64, float64LE
+    , char, string
+    )
 
 {-| Binary data
 
@@ -24,12 +32,13 @@ module Binary exposing (..)
 @docs float32, float32LE, float64, float64LE
 
 @@ Characters
+
 @docs char, string
 
 -}
 
-import Native.Binary
 import Char
+import Native.Binary
 import String
 
 
@@ -47,7 +56,7 @@ zeros n =
         n_ =
             max 0 n
     in
-        Native.Binary.zeros n_
+    Native.Binary.zeros n_
 
 
 {-| Encode as int8

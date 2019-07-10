@@ -1,45 +1,12 @@
-module Binary.Decode
-    exposing
-        ( Decoder
-        , decode
-          --
-        , succeed
-        , fail
-        , andThen
-        , map
-        , map2
-        , apply
-        , ignore
-          --
-        , sequence
-        , repeat
-        , many
-          --
-        , position
-        , skip
-        , goto
-          --
-        , int8
-        , uint8
-        , int16
-        , int16LE
-        , uint16
-        , uint16LE
-        , int32
-        , int32LE
-        , uint32
-        , uint32LE
-        , float32
-        , float32LE
-        , float64
-        , float64LE
-          --
-        , char
-        , string
-          --
-        , arrayBuffer
-        , source
-        )
+module Binary.Decode exposing
+    ( Decoder, decode
+    , succeed, fail, andThen, map, map2, apply, ignore, sequence, repeat, many
+    , position, skip, goto
+    , int8, uint8, int16, int16LE, uint16, uint16LE, int32, int32LE, uint32, uint32LE
+    , float32, float32LE, float64, float64LE
+    , char, string
+    , arrayBuffer, source
+    )
 
 {-| Parser combinator for decoding binary messages.
 
@@ -118,7 +85,7 @@ decode (Decoder f) source =
             (\err ->
                 err.msg
                     ++ " at position "
-                    ++ (toString err.position)
+                    ++ toString err.position
              -- TODO: add context to error message
             )
 
@@ -154,7 +121,7 @@ andThen f (Decoder decoderA) =
                             (Decoder decoderB) =
                                 f a
                         in
-                            decoderB state2
+                        decoderB state2
                     )
         )
 
@@ -230,10 +197,10 @@ many (Decoder decoder) =
                 Err _ ->
                     Ok ( state, [] )
     in
-        Decoder
-            (\state ->
-                manyHelp decoder state
-            )
+    Decoder
+        (\state ->
+            manyHelp decoder state
+        )
 
 
 
@@ -469,12 +436,12 @@ arrayBuffer : Int -> Decoder ArrayBuffer
 arrayBuffer n =
     Decoder
         (\state ->
-            case (state.source |> fromDataView |> Binary.slice state.position (state.position + n)) of
+            case state.source |> fromDataView |> Binary.slice state.position (state.position + n) of
                 Just buffer ->
                     Ok ( { state | position = state.position + n }, buffer )
 
                 Nothing ->
-                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ (toString n)))
+                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ toString n))
         )
 
 
