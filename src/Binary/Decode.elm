@@ -53,6 +53,7 @@ module Binary.Decode exposing
 import Binary exposing (ArrayBuffer)
 import Char
 import String
+import Elm.Kernel.Binary
 
 
 type alias State =
@@ -468,52 +469,52 @@ type DataView
 
 dataView : ArrayBuffer -> DataView
 dataView =
-    Native.Binary.dataView
+    Elm.Kernel.Binary.dataView
 
 
 fromDataView : DataView -> ArrayBuffer
 fromDataView =
-    Native.Binary.fromDataView
+    Elm.Kernel.Binary.fromDataView
 
 
 getInt8 : Int -> DataView -> Maybe Int
 getInt8 =
-    Native.Binary.getInt8
+    Elm.Kernel.Binary.getInt8
 
 
 getUint8 : Int -> DataView -> Maybe Int
 getUint8 =
-    Native.Binary.getUint8
+    Elm.Kernel.Binary.getUint8
 
 
 getInt16 : Bool -> Int -> DataView -> Maybe Int
 getInt16 =
-    Native.Binary.getInt16
+    Elm.Kernel.Binary.getInt16
 
 
 getUint16 : Bool -> Int -> DataView -> Maybe Int
 getUint16 =
-    Native.Binary.getUint16
+    Elm.Kernel.Binary.getUint16
 
 
 getInt32 : Bool -> Int -> DataView -> Maybe Int
 getInt32 =
-    Native.Binary.getInt32
+    Elm.Kernel.Binary.getInt32
 
 
 getUint32 : Bool -> Int -> DataView -> Maybe Int
 getUint32 =
-    Native.Binary.getUint32
+    Elm.Kernel.Binary.getUint32
 
 
 getFloat32 : Bool -> Int -> DataView -> Maybe Float
 getFloat32 =
-    Native.Binary.getFloat32
+    Elm.Kernel.Binary.getFloat32
 
 
 getFloat64 : Bool -> Int -> DataView -> Maybe Float
 getFloat64 =
-    Native.Binary.getFloat64
+    Elm.Kernel.Binary.getFloat64
 
 
 
