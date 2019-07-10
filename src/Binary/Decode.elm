@@ -52,8 +52,8 @@ module Binary.Decode exposing
 
 import Binary exposing (ArrayBuffer)
 import Char
-import String
 import Elm.Kernel.Binary
+import String
 
 
 type alias State =
@@ -86,7 +86,7 @@ decode (Decoder f) sourceBuffer =
             (\err ->
                 err.msg
                     ++ " at position "
-                    ++ toString err.position
+                    ++ String.fromInt err.position
              -- TODO: add context to error message
             )
 
@@ -442,7 +442,7 @@ arrayBuffer n =
                     Ok ( { state | position = state.position + n }, buffer )
 
                 Nothing ->
-                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ toString n))
+                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ String.fromInt n))
         )
 
 
