@@ -1,8 +1,10 @@
-/* global F2, F3, _elm_lang$core$Native_List  */
+/*
+
+import Elm.Kernel.List exposing (toArray)
+
+*/
 
 var _dividat$elm_binary$Native_Binary = (function () {
-  const List = _elm_lang$core$Native_List
-
   function Just (a) {
     return {ctor: 'Just',
       _0: a}
@@ -138,7 +140,7 @@ var _dividat$elm_binary$Native_Binary = (function () {
   //
 
   function concat (elmBuffers) {
-    var buffers = List.toArray(elmBuffers)
+    var buffers = __List_toArray(elmBuffers)
 
     var length = buffers.reduce(function (total, buffer) {
       return total + buffer.byteLength
