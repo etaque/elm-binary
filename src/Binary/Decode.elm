@@ -79,8 +79,8 @@ type Decoder a
 {-| Run the decoder.
 -}
 decode : Decoder a -> ArrayBuffer -> Result String a
-decode (Decoder f) source =
-    f (State 0 [] (dataView source))
+decode (Decoder f) sourceBuffer =
+    f (State 0 [] (dataView sourceBuffer))
         |> Result.map Tuple.second
         |> Result.mapError
             (\err ->
@@ -189,10 +189,10 @@ repeat n decoder =
 many : Decoder a -> Decoder (List a)
 many (Decoder decoder) =
     let
-        manyHelp decoder state =
-            case decoder state of
+        manyHelp decoder_ state =
+            case decoder_ state of
                 Ok ( newState, a ) ->
-                    manyHelp decoder newState
+                    manyHelp decoder_ newState
                         |> Result.map (Tuple.mapSecond ((::) a))
 
                 Err _ ->
