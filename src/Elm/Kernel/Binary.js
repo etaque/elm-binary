@@ -23,50 +23,51 @@ function _Binary_uint8(a) {
   return buffer;
 }
 
-var _Binary_int16 = F2(function (le, a) {
+var _Binary_int16 = F2(function(le, a) {
   var buffer = new ArrayBuffer(2);
   var view = new DataView(buffer);
   view.setInt16(0, a, le);
   return buffer;
 });
 
-var _Binary_uint16 = F2(function (le, a) {
+var _Binary_uint16 = F2(function(le, a) {
   var buffer = new ArrayBuffer(2);
   var view = new DataView(buffer);
   view.setInt16(0, a, le);
   return buffer;
 });
 
-var _Binary_int32 = F2(function (le, a) {
+var _Binary_int32 = F2(function(le, a) {
   var buffer = new ArrayBuffer(4);
   var view = new DataView(buffer);
   view.setInt32(0, a, le);
   return buffer;
 });
 
-var _Binary_uint32 = F2(function (le, a) {
+var _Binary_uint32 = F2(function(le, a) {
   var buffer = new ArrayBuffer(4);
   var view = new DataView(buffer);
   view.setUint32(0, a, le);
   return buffer;
 });
 
-var _Binary_float32 = F2(function (le, a) {
+var _Binary_float32 = F2(function(le, a) {
   var buffer = new ArrayBuffer(4);
   var view = new DataView(buffer);
   view.setFloat32(0, a, le);
   return buffer;
 });
 
-var _Binary_float64 = F2(function (le, a) {
+var _Binary_float64 = F2(function(le, a) {
   var buffer = new ArrayBuffer(8);
   var view = new DataView(buffer);
   view.setFloat64(0, a, le);
   return buffer;
 });
+
 //
 
-var _Binary_getInt8 = F2(function (offset, view) {
+var _Binary_getInt8 = F2(function(offset, view) {
   try {
     return __Maybe_Just(view.getInt8(offset));
   } catch (e) {
@@ -74,7 +75,7 @@ var _Binary_getInt8 = F2(function (offset, view) {
   }
 });
 
-var _Binary_getUint8 = F2(function (offset, view) {
+var _Binary_getUint8 = F2(function(offset, view) {
   try {
     return __Maybe_Just(view.getUint8(offset));
   } catch (e) {
@@ -82,7 +83,7 @@ var _Binary_getUint8 = F2(function (offset, view) {
   }
 });
 
-var _Binary_getInt16 = F3(function (le, offset, view) {
+var _Binary_getInt16 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getInt16(offset, le));
   } catch (e) {
@@ -90,7 +91,7 @@ var _Binary_getInt16 = F3(function (le, offset, view) {
   }
 });
 
-var _Binary_getUint16 = F3(function (le, offset, view) {
+var _Binary_getUint16 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getUint16(offset, le));
   } catch (e) {
@@ -98,7 +99,7 @@ var _Binary_getUint16 = F3(function (le, offset, view) {
   }
 });
 
-var _Binary_getInt32 = F3(function (le, offset, view) {
+var _Binary_getInt32 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getInt32(offset, le));
   } catch (e) {
@@ -106,7 +107,7 @@ var _Binary_getInt32 = F3(function (le, offset, view) {
   }
 });
 
-var _Binary_getUint32 = F3(function (le, offset, view) {
+var _Binary_getUint32 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getUint32(offset, le));
   } catch (e) {
@@ -114,7 +115,7 @@ var _Binary_getUint32 = F3(function (le, offset, view) {
   }
 });
 
-var _Binary_getFloat32 = F3(function (le, offset, view) {
+var _Binary_getFloat32 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getFloat32(offset, le));
   } catch (e) {
@@ -122,7 +123,7 @@ var _Binary_getFloat32 = F3(function (le, offset, view) {
   }
 });
 
-var _Binary_getFloat64 = F3(function (le, offset, view) {
+var _Binary_getFloat64 = F3(function(le, offset, view) {
   try {
     return __Maybe_Just(view.getFloat64(offset, le));
   } catch (e) {
