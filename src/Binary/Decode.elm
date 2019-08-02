@@ -419,7 +419,7 @@ char =
         |> map Char.fromCode
 
 
-{-| Decode a string of fixed lenght
+{-| Decode a string of fixed length
 -}
 string : Int -> Decoder String
 string n =
@@ -442,7 +442,7 @@ arrayBuffer n =
                     Ok ( { state | position = state.position + n }, buffer )
 
                 Nothing ->
-                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ String.fromInt n))
+                    Err (Error state.position state.context ("could not get ArrayBuffer of length " ++ String.fromInt n))
         )
 
 
