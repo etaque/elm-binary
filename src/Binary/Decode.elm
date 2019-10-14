@@ -1,45 +1,12 @@
-module Binary.Decode
-    exposing
-        ( Decoder
-        , decode
-          --
-        , succeed
-        , fail
-        , andThen
-        , map
-        , map2
-        , apply
-        , ignore
-          --
-        , sequence
-        , repeat
-        , many
-          --
-        , position
-        , skip
-        , goto
-          --
-        , int8
-        , uint8
-        , int16
-        , int16LE
-        , uint16
-        , uint16LE
-        , int32
-        , int32LE
-        , uint32
-        , uint32LE
-        , float32
-        , float32LE
-        , float64
-        , float64LE
-          --
-        , char
-        , string
-          --
-        , arrayBuffer
-        , source
-        )
+module Binary.Decode exposing
+    ( Decoder, decode
+    , succeed, fail, andThen, map, map2, apply, ignore, sequence, repeat, many
+    , position, skip, goto
+    , int8, uint8, int16, int16LE, uint16, uint16LE, int32, int32LE, uint32, uint32LE
+    , float32, float32LE, float64, float64LE
+    , char, string
+    , arrayBuffer, source
+    )
 
 {-| Parser combinator for decoding binary messages.
 
@@ -85,6 +52,7 @@ module Binary.Decode
 
 import Binary exposing (ArrayBuffer)
 import Char
+import Elm.Kernel.Binary
 import String
 
 
@@ -111,14 +79,14 @@ type Decoder a
 {-| Run the decoder.
 -}
 decode : Decoder a -> ArrayBuffer -> Result String a
-decode (Decoder f) source =
-    f (State 0 [] (dataView source))
+decode (Decoder f) sourceBuffer =
+    f (State 0 [] (dataView sourceBuffer))
         |> Result.map Tuple.second
         |> Result.mapError
             (\err ->
                 err.msg
                     ++ " at position "
-                    ++ (toString err.position)
+                    ++ String.fromInt err.position
              -- TODO: add context to error message
             )
 
@@ -154,7 +122,7 @@ andThen f (Decoder decoderA) =
                             (Decoder decoderB) =
                                 f a
                         in
-                            decoderB state2
+                        decoderB state2
                     )
         )
 
@@ -221,19 +189,19 @@ repeat n decoder =
 many : Decoder a -> Decoder (List a)
 many (Decoder decoder) =
     let
-        manyHelp decoder state =
-            case decoder state of
+        manyHelp decoder_ state =
+            case decoder_ state of
                 Ok ( newState, a ) ->
-                    manyHelp decoder newState
+                    manyHelp decoder_ newState
                         |> Result.map (Tuple.mapSecond ((::) a))
 
                 Err _ ->
                     Ok ( state, [] )
     in
-        Decoder
-            (\state ->
-                manyHelp decoder state
-            )
+    Decoder
+        (\state ->
+            manyHelp decoder state
+        )
 
 
 
@@ -451,7 +419,7 @@ char =
         |> map Char.fromCode
 
 
-{-| Decode a string of fixed lenght
+{-| Decode a string of fixed length
 -}
 string : Int -> Decoder String
 string n =
@@ -469,12 +437,12 @@ arrayBuffer : Int -> Decoder ArrayBuffer
 arrayBuffer n =
     Decoder
         (\state ->
-            case (state.source |> fromDataView |> Binary.slice state.position (state.position + n)) of
+            case state.source |> fromDataView |> Binary.slice state.position (state.position + n) of
                 Just buffer ->
                     Ok ( { state | position = state.position + n }, buffer )
 
                 Nothing ->
-                    Err (Error state.position state.context ("could not get ArrayBuffer of lenght " ++ (toString n)))
+                    Err (Error state.position state.context ("could not get ArrayBuffer of length " ++ String.fromInt n))
         )
 
 
@@ -501,52 +469,52 @@ type DataView
 
 dataView : ArrayBuffer -> DataView
 dataView =
-    Native.Binary.dataView
+    Elm.Kernel.Binary.dataView
 
 
 fromDataView : DataView -> ArrayBuffer
 fromDataView =
-    Native.Binary.fromDataView
+    Elm.Kernel.Binary.fromDataView
 
 
 getInt8 : Int -> DataView -> Maybe Int
 getInt8 =
-    Native.Binary.getInt8
+    Elm.Kernel.Binary.getInt8
 
 
 getUint8 : Int -> DataView -> Maybe Int
 getUint8 =
-    Native.Binary.getUint8
+    Elm.Kernel.Binary.getUint8
 
 
 getInt16 : Bool -> Int -> DataView -> Maybe Int
 getInt16 =
-    Native.Binary.getInt16
+    Elm.Kernel.Binary.getInt16
 
 
 getUint16 : Bool -> Int -> DataView -> Maybe Int
 getUint16 =
-    Native.Binary.getUint16
+    Elm.Kernel.Binary.getUint16
 
 
 getInt32 : Bool -> Int -> DataView -> Maybe Int
 getInt32 =
-    Native.Binary.getInt32
+    Elm.Kernel.Binary.getInt32
 
 
 getUint32 : Bool -> Int -> DataView -> Maybe Int
 getUint32 =
-    Native.Binary.getUint32
+    Elm.Kernel.Binary.getUint32
 
 
 getFloat32 : Bool -> Int -> DataView -> Maybe Float
 getFloat32 =
-    Native.Binary.getFloat32
+    Elm.Kernel.Binary.getFloat32
 
 
 getFloat64 : Bool -> Int -> DataView -> Maybe Float
 getFloat64 =
-    Native.Binary.getFloat64
+    Elm.Kernel.Binary.getFloat64
 
 
 

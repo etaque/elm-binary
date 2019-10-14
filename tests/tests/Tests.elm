@@ -60,14 +60,14 @@ basicTypes : Test
 basicTypes =
     let
         basicTest : String -> Fuzz.Fuzzer a -> (a -> ArrayBuffer) -> BD.Decoder a -> Test
-        basicTest name fuzzer encoder decoder =
+        basicTest name fuzzer encoder decoder_ =
             fuzz fuzzer name <|
                 \a ->
                     encoder a
                         -- Repeat multiple times to make sure decoder shifts forward properly after successfull decoding
                         |> List.repeat 3
                         |> Binary.concat
-                        |> BD.decode (BD.many decoder)
+                        |> BD.decode (BD.many decoder_)
                         |> Expect.equal (Ok (a |> List.repeat 3))
     in
         describe "basic types"
@@ -137,8 +137,8 @@ algebraic =
                 |> Fuzz.map (\a -> (+) a)
 
         extract : BD.Decoder a -> Result String a
-        extract decoder =
-            BD.decode decoder (Binary.zeros 10)
+        extract decoder_ =
+            BD.decode decoder_ (Binary.zeros 10)
     in
         describe "Algebraic"
             [ describe "Functor Laws"

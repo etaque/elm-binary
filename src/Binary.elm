@@ -1,4 +1,12 @@
-module Binary exposing (..)
+module Binary exposing
+    ( ArrayBuffer(..), zeros
+    , concat, length, slice
+    , int8, uint8, int16, int16LE
+    , uint16, uint16LE
+    , int32, int32LE, uint32, uint32LE
+    , float32, float32LE, float64, float64LE
+    , char, string
+    )
 
 {-| Binary data
 
@@ -24,12 +32,13 @@ module Binary exposing (..)
 @docs float32, float32LE, float64, float64LE
 
 @@ Characters
+
 @docs char, string
 
 -}
 
-import Native.Binary
 import Char
+import Elm.Kernel.Binary
 import String
 
 
@@ -47,21 +56,21 @@ zeros n =
         n_ =
             max 0 n
     in
-        Native.Binary.zeros n_
+    Elm.Kernel.Binary.zeros n_
 
 
 {-| Encode as int8
 -}
 int8 : Int -> ArrayBuffer
 int8 =
-    Native.Binary.int8
+    Elm.Kernel.Binary.int8
 
 
 {-| Encode as uint8
 -}
 uint8 : Int -> ArrayBuffer
 uint8 =
-    Native.Binary.uint8
+    Elm.Kernel.Binary.uint8
 
 
 
@@ -72,28 +81,28 @@ uint8 =
 -}
 int16 : Int -> ArrayBuffer
 int16 =
-    Native.Binary.int16 False
+    Elm.Kernel.Binary.int16 False
 
 
 {-| Encode as int16 (little-endian)
 -}
 int16LE : Int -> ArrayBuffer
 int16LE =
-    Native.Binary.int16 True
+    Elm.Kernel.Binary.int16 True
 
 
 {-| Encode as uint16
 -}
 uint16 : Int -> ArrayBuffer
 uint16 =
-    Native.Binary.uint16 False
+    Elm.Kernel.Binary.uint16 False
 
 
 {-| Encode as uint16 (little-endian)
 -}
 uint16LE : Int -> ArrayBuffer
 uint16LE =
-    Native.Binary.uint16 True
+    Elm.Kernel.Binary.uint16 True
 
 
 
@@ -104,28 +113,28 @@ uint16LE =
 -}
 int32 : Int -> ArrayBuffer
 int32 =
-    Native.Binary.int32 False
+    Elm.Kernel.Binary.int32 False
 
 
 {-| Encode as int32 (little-endian)
 -}
 int32LE : Int -> ArrayBuffer
 int32LE =
-    Native.Binary.int32 True
+    Elm.Kernel.Binary.int32 True
 
 
 {-| Encode as uint32
 -}
 uint32 : Int -> ArrayBuffer
 uint32 =
-    Native.Binary.uint32 False
+    Elm.Kernel.Binary.uint32 False
 
 
 {-| Encode as uint32 (little-endian)
 -}
 uint32LE : Int -> ArrayBuffer
 uint32LE =
-    Native.Binary.uint32 True
+    Elm.Kernel.Binary.uint32 True
 
 
 
@@ -136,28 +145,28 @@ uint32LE =
 -}
 float32 : Float -> ArrayBuffer
 float32 =
-    Native.Binary.float32 False
+    Elm.Kernel.Binary.float32 False
 
 
 {-| Encode as 32bit float (little-endian)
 -}
 float32LE : Float -> ArrayBuffer
 float32LE =
-    Native.Binary.float32 True
+    Elm.Kernel.Binary.float32 True
 
 
 {-| Encode as 64bit float
 -}
 float64 : Float -> ArrayBuffer
 float64 =
-    Native.Binary.float64 False
+    Elm.Kernel.Binary.float64 False
 
 
 {-| Encode as 64bit float (little-endian)
 -}
 float64LE : Float -> ArrayBuffer
 float64LE =
-    Native.Binary.float64 True
+    Elm.Kernel.Binary.float64 True
 
 
 
@@ -188,18 +197,18 @@ string =
 -}
 concat : List ArrayBuffer -> ArrayBuffer
 concat =
-    Native.Binary.concat
+    Elm.Kernel.Binary.concat
 
 
 {-| Return lenght of ArrayBuffer in bytes.
 -}
 length : ArrayBuffer -> Int
 length =
-    Native.Binary.length
+    Elm.Kernel.Binary.length
 
 
 {-| Get content of ArrayBuffer from specified begin byte offset (inclusive) to end (exclusive).
 -}
 slice : Int -> Int -> ArrayBuffer -> Maybe ArrayBuffer
 slice =
-    Native.Binary.slice
+    Elm.Kernel.Binary.slice
