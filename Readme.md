@@ -4,17 +4,21 @@ Binary data in Elm.
 
 This is very much inspired by https://github.com/jinjor/elm-binary-decoder.
 
-**_WARNING: Very experimental!_**
+## Kernel code
 
-## Native modules
+This package uses Kernel code, so it can not be directly installed.
 
-As this package uses Elm Native modules you will need to install with something like [elm-github-install](https://github.com/gdotdesign/elm-github-install).
+## Tests
 
-## Todos
+To execute the tests, run `elm-test` from the `tests` directory:
 
--   [ ] Equality test between `Binary.ArrayBuffer` does not work the way I expect: `Binary.uint32 0 == Binary.uint32 1` is `True`. Also see test case for this. I don't fully understand how Elm checks equality. How can this be fixed?
+    cd tests && elm-test
 
-Contributions are very welcome.
+Because the module contains kernel code, a minimal application has to be set up in order to run the tests.
+
+### Gotchas
+
+-   Equality test on `Binary.ArrayBuffer` has unexpected behaviour: `Binary.uint32 0 == Binary.uint32 1` is `True`. Also see test case for this.
 
 ## References
 
