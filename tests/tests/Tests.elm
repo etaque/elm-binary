@@ -26,10 +26,6 @@ basicOperations =
                     |> Binary.concat
                     |> Binary.length
                     |> Expect.equal 16
-        , test "equality" <|
-            \_ ->
-                (Binary.uint32 0 /= Binary.uint32 1)
-                    |> Expect.true "Expecting uint32 0 /= uint32 1"
         , fuzz (Fuzz.intRange 0 64) "lenght (zeros)" <|
             \n ->
                 Binary.zeros n

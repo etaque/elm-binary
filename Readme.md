@@ -16,9 +16,9 @@ To execute the tests, run `elm-test` from the `tests` directory:
 
 Because the module contains kernel code, a minimal application has to be set up in order to run the tests.
 
-### Gotchas
+## Limitations
 
--   Equality test on `Binary.ArrayBuffer` has unexpected behaviour: `Binary.uint32 0 == Binary.uint32 1` is `True`. Also see test case for this.
+-   Equality is not well-defined on `Binary.ArrayBuffer`, it will be true for any two values.
 
 ## References
 
