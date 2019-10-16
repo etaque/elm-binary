@@ -72,7 +72,7 @@ basicTypes =
                 Binary.zeros n
                     |> BD.decode (BD.many BD.int8)
                     |> Expect.equal (Ok (List.repeat n 0))
-        , basicTest "int8-" (Fuzz.intRange -128 127) Binary.int8 BD.int8
+        , basicTest "int8" (Fuzz.intRange -128 127) Binary.int8 BD.int8
         , test "int8 overflow" <|
             \_ ->
                 Binary.int8 128
