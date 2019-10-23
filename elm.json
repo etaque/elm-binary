@@ -3,7 +3,7 @@
     "name": "dividat/elm-binary",
     "summary": "Binary data in Elm.",
     "license": "BSD-3-Clause",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "exposed-modules": [
         "Binary",
         "Binary.Decode"
