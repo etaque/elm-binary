@@ -1,3 +1,5 @@
+module BinaryTest exposing (..)
+
 import Binary
 import Binary.Decode as BD
 import Html as H
