@@ -8,13 +8,9 @@ This is very much inspired by https://github.com/jinjor/elm-binary-decoder.
 
 This package uses Kernel code, so it can not be directly installed.
 
-## Tests
+## Getting started
 
-To execute the tests, run `elm-test` from the `tests` directory:
-
-    cd tests && elm-test
-
-Because the module contains kernel code, a minimal application has to be set up in order to run the tests.
+Use `nix-shell --run elm-pkg` to list available commands.
 
 ## Limitations
 

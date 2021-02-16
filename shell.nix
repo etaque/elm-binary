@@ -1,17 +1,21 @@
 let
-  elmPackages = fetchGit {
+
+  pkgs = (import (builtins.fetchGit {
     url = "git@github.com:dividat/elm-compiler.git";
-    rev = "96a50718998028c8ba2e557a0907b2bb54166d5c";
-    ref = "refs/tags/3.1.0";
+    rev = "6f755abe65739990a2641fbea8775704eb8d4f35"; # 4.0.0
+  })).forPackage {
+    hasTests = true;
+    hasExamples = true;
   };
-in
-  (import elmPackages {
-    publicElmPackages =
-      (import ./elm-packages/public.nix)
-      // (import ./tests/elm-packages/public.nix)
-      // (import ./example/elm-packages/public.nix);
-    package = {
-      name = "dividat/elm-binary";
-      version = "1.2.0";
-    };
-  }).shell
+
+in pkgs.mkShell {
+
+  ELM_HOME = (builtins.getEnv "PWD") + "/.elm";
+
+  buildInputs = with pkgs; [
+    elm-pkg
+    elmPackages.elm
+    elmPackages.elm-format
+  ];
+
+}
